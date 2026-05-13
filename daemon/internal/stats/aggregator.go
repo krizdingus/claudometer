@@ -15,26 +15,38 @@ type routinesSource interface {
 }
 
 type Aggregator struct {
-	Records  []claudedata.Record
-	PlanInfo claudedata.PlanInfo
-	Routines routinesSource
-	Now      func() time.Time
+	// Records is the static set of records used when GetRecords is nil.
+	// Tests set this directly; production code should set GetRecords instead
+	// so the daemon picks up newly-written JSONL lines between requests.
+	Records    []claudedata.Record
+	GetRecords func() []claudedata.Record
+	PlanInfo   claudedata.PlanInfo
+	Routines   routinesSource
+	Now        func() time.Time
+}
+
+func (a *Aggregator) records() []claudedata.Record {
+	if a.GetRecords != nil {
+		return a.GetRecords()
+	}
+	return a.Records
 }
 
 func (a *Aggregator) Build(ctx context.Context) (Stats, error) {
 	now := a.Now()
 	caps := claudedata.PlanCaps(a.PlanInfo.Plan)
-	blocks := claudedata.ComputeBlocks(a.Records, 5*time.Hour)
+	recs := a.records()
+	blocks := claudedata.ComputeBlocks(recs, 5*time.Hour)
 	active := claudedata.ActiveBlock(blocks, now)
 
 	out := Stats{
 		Schema:      SchemaVersion,
 		GeneratedAt: now,
 		Session:     buildSession(active, caps, now),
-		ModelsToday: buildModelsToday(a.Records, now),
-		Sonnet:      buildSonnet(a.Records, caps, now),
+		ModelsToday: buildModelsToday(recs, now),
+		Sonnet:      buildSonnet(recs, caps, now),
 		Chat:        Chat{MessagesToday: 0, DailyCap: caps.DailyChatMessages, ResetsAt: "00:00"},
-		Budgets:     buildBudgets(a.Records, a.PlanInfo.Plan, caps, now),
+		Budgets:     buildBudgets(recs, a.PlanInfo.Plan, caps, now),
 	}
 
 	rs, err := a.Routines.Get(ctx)
