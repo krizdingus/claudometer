@@ -1,0 +1,7 @@
+[
+  {"name":"babysit-prs","schedule":"0 */5 * * *","last_run":"2026-05-13T12:00:00-07:00","last_status":"ok","next_run":"2026-05-13T17:00:00-07:00"},
+  {"name":"morning-standup","schedule":"0 9 * * *","last_run":"2026-05-13T09:00:00-07:00","last_status":"ok","next_run":"2026-05-14T09:00:00-07:00"},
+  {"name":"deps-audit","schedule":"*/30 * * * *","last_run":"2026-05-13T14:18:00-07:00","last_status":"slow","next_run":"2026-05-13T14:48:00-07:00"},
+  {"name":"nightly-test-run","schedule":"0 2 * * *","last_run":"2026-05-13T02:00:00-07:00","last_status":"fail","next_run":"2026-05-14T02:00:00-07:00"},
+  {"name":"weekly-roundup","schedule":"0 17 * * 5","last_run":null,"last_status":"queued","next_run":"2026-05-15T17:00:00-07:00"}
+]
