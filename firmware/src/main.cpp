@@ -3,35 +3,33 @@
 #ifndef UNIT_TEST
 
 #include <Arduino.h>
+#include <lvgl.h>
 
 #include "hw/display.h"
 #include "hw/touch.h"
+#include "ui/lvgl_glue.h"
 
 void setup() {
   Serial.begin(115200);
-  delay(200);
+  cyd::display().init();
+  cyd::display().setRotation(0);
+  cyd::display().setBrightness(200);
+  cyd::display().fillScreen(0x0000);
+  cyd::touch().probe_and_init();
+  cyd::lvgl_init();
 
-  auto &lcd = cyd::display();
-  lcd.init();
-  lcd.setRotation(0);
-  lcd.setBrightness(200);
-  lcd.fillScreen(0x0000);
-
-  auto kind = cyd::touch().probe_and_init();
-  lcd.setTextColor(0xFFFF, 0x0000);
-  lcd.setCursor(10, 10);
-  lcd.printf("touch: %s",
-             kind == cyd::TouchKind::Capacitive ? "capacitive"
-             : kind == cyd::TouchKind::Resistive ? "resistive" : "none");
+  lv_obj_t *scr = lv_screen_active();
+  lv_obj_set_style_bg_color(scr, lv_color_hex(0x0E0E10), 0);
+  lv_obj_t *label = lv_label_create(scr);
+  lv_label_set_text(label, "LVGL OK\nclaude monitor");
+  lv_obj_set_style_text_color(label, lv_color_hex(0xD97757), 0);
+  lv_obj_set_style_text_font(label, &lv_font_montserrat_24, 0);
+  lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
 }
 
 void loop() {
-  auto ev = cyd::touch().poll();
-  if (ev.pressed) {
-    Serial.printf("touch @ (%d, %d)\n", ev.x, ev.y);
-    cyd::display().fillCircle(ev.x, ev.y, 4, 0xFFFF);
-  }
-  delay(20);
+  cyd::lvgl_tick();
+  delay(5);
 }
 
 #endif  // UNIT_TEST
