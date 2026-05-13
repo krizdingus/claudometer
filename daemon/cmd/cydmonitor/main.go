@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -87,21 +88,25 @@ func serve() error {
 }
 
 func loadAllJSONL(projectsDir string) ([]claudedata.Record, error) {
-	entries, err := os.ReadDir(projectsDir)
-	if err != nil {
-		return nil, err
-	}
 	var out []claudedata.Record
-	for _, e := range entries {
-		if e.IsDir() || filepath.Ext(e.Name()) != ".jsonl" {
-			continue
+	err := filepath.WalkDir(projectsDir, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			fmt.Fprintf(os.Stderr, "warning: walk %s: %v\n", path, walkErr)
+			return nil
 		}
-		recs, err := claudedata.ParseFile(filepath.Join(projectsDir, e.Name()))
+		if d.IsDir() || filepath.Ext(d.Name()) != ".jsonl" {
+			return nil
+		}
+		recs, err := claudedata.ParseFile(path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: skipping %s: %v\n", e.Name(), err)
-			continue
+			fmt.Fprintf(os.Stderr, "warning: skipping %s: %v\n", path, err)
+			return nil
 		}
 		out = append(out, recs...)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return out, nil
 }
