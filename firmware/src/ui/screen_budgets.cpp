@@ -34,24 +34,23 @@ static void build_row(lv_obj_t *parent, int y, const char *name,
 
 void ScreenBudgets::build(lv_obj_t *parent) {
   auto *title = lv_label_create(parent);
-  lv_label_set_text(title, "Budgets · This Week");
+  lv_label_set_text(title, "Budgets - This Week");
   lv_obj_set_style_text_color(title, theme::c(theme::fg_muted), 0);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_12, 0);
   lv_obj_align(title, LV_ALIGN_TOP_LEFT, 4, 0);
 
   build_row(parent, 24, "Code",  code_all_);
   build_row(parent, 60, "Opus",  code_opus_);
-  build_row(parent, 96, "Chat",  chat_);
 
   plan_ = lv_label_create(parent);
   lv_obj_set_style_text_color(plan_, theme::c(theme::accent), 0);
   lv_obj_set_style_text_font(plan_, &lv_font_montserrat_16, 0);
-  lv_obj_align(plan_, LV_ALIGN_TOP_LEFT, 4, 150);
+  lv_obj_align(plan_, LV_ALIGN_TOP_LEFT, 4, 120);
 
   resets_ = lv_label_create(parent);
   lv_obj_set_style_text_color(resets_, theme::c(theme::fg_muted), 0);
   lv_obj_set_style_text_font(resets_, &lv_font_montserrat_14, 0);
-  lv_obj_align(resets_, LV_ALIGN_TOP_LEFT, 4, 178);
+  lv_obj_align(resets_, LV_ALIGN_TOP_LEFT, 4, 148);
 
   warn_ = lv_label_create(parent);
   lv_obj_set_style_text_color(warn_, theme::c(theme::bg), 0);
@@ -60,7 +59,7 @@ void ScreenBudgets::build(lv_obj_t *parent) {
   lv_obj_set_style_bg_opa(warn_, LV_OPA_COVER, 0);
   lv_obj_set_style_pad_all(warn_, 4, 0);
   lv_obj_set_style_radius(warn_, 6, 0);
-  lv_obj_align(warn_, LV_ALIGN_TOP_LEFT, 4, 210);
+  lv_obj_align(warn_, LV_ALIGN_TOP_LEFT, 4, 180);
   lv_obj_add_flag(warn_, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -75,17 +74,16 @@ static void set_row(ScreenBudgets::Row &r, int pct) {
 void ScreenBudgets::update(const Stats &s) {
   set_row(code_all_, s.budgets.code_all);
   set_row(code_opus_, s.budgets.code_opus);
-  set_row(chat_, s.budgets.chat);
 
-  lv_label_set_text(plan_, s.budgets.plan.empty() ? "—" : s.budgets.plan.c_str());
+  lv_label_set_text(plan_, s.budgets.plan.empty() ? "-" : s.budgets.plan.c_str());
   char r[40];
   snprintf(r, sizeof(r), "resets in %s", s.budgets.resets_in.c_str());
   lv_label_set_text(resets_, r);
 
-  int worst = std::max({s.budgets.code_all, s.budgets.code_opus, s.budgets.chat});
+  int worst = std::max(s.budgets.code_all, s.budgets.code_opus);
   if (worst >= 85) {
     char w[40];
-    snprintf(w, sizeof(w), "  %d%% used — slow down  ", worst);
+    snprintf(w, sizeof(w), "  %d%% used - slow down  ", worst);
     lv_label_set_text(warn_, w);
     lv_obj_clear_flag(warn_, LV_OBJ_FLAG_HIDDEN);
   } else {
