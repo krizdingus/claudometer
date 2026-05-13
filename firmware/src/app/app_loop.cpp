@@ -219,6 +219,15 @@ void app_init() {
   ctx_.have_wifi_creds = nvs_->has_wifi_creds();
   ctx_.have_token      = nvs_->has_token();
 
+  // Restore daemon URL from NVS so paired boots can poll immediately without
+  // re-running discovery. perform_discover() also reads this; we keep both
+  // paths populated.
+  std::string saved_host = nvs_->daemon_host();
+  if (!saved_host.empty()) {
+    daemon_base_url_ = "http://" + saved_host;
+    daemon_display_ = saved_host;
+  }
+
   root_ = lv_screen_active();
   lv_obj_set_style_bg_color(root_, theme::c(theme::bg), 0);
 
@@ -230,6 +239,8 @@ void app_init() {
   lv_obj_align(pre_pairing_layer_, LV_ALIGN_TOP_MID, 0, kStatusBarHeight);
   lv_obj_set_style_bg_color(pre_pairing_layer_, theme::c(theme::bg), 0);
   lv_obj_set_style_border_width(pre_pairing_layer_, 0, 0);
+  lv_obj_set_style_radius(pre_pairing_layer_, 0, 0);
+  lv_obj_set_style_pad_all(pre_pairing_layer_, 0, 0);
   lv_obj_clear_flag(pre_pairing_layer_, LV_OBJ_FLAG_SCROLLABLE);
   // Children: 0=prov, 1=disc, 2=pair (referenced by index in render_state).
   prov_ = new ProvisionScreen();
@@ -245,6 +256,8 @@ void app_init() {
   lv_obj_align(main_layer_, LV_ALIGN_TOP_MID, 0, kStatusBarHeight);
   lv_obj_set_style_bg_color(main_layer_, theme::c(theme::bg), 0);
   lv_obj_set_style_border_width(main_layer_, 0, 0);
+  lv_obj_set_style_radius(main_layer_, 0, 0);
+  lv_obj_set_style_pad_all(main_layer_, 0, 0);
   lv_obj_clear_flag(main_layer_, LV_OBJ_FLAG_SCROLLABLE);
 
   tileview_ = new Tileview();

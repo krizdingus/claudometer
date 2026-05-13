@@ -17,10 +17,8 @@ constexpr int TFT_DC   = 2;
 constexpr int TFT_RST  = -1;   // tied to EN on most boards
 constexpr int TFT_BL   = 21;   // backlight (active high)
 
-// XPT2046 resistive touch (VSPI) — R variant only
-constexpr int XPT_SCLK = 25;
-constexpr int XPT_MOSI = 32;
-constexpr int XPT_MISO = 39;
+// XPT2046 resistive touch — R variant. Shares HSPI with the display:
+// SCLK/MOSI/MISO are the same as TFT_*; only CS and IRQ are unique.
 constexpr int XPT_CS   = 33;
 constexpr int XPT_IRQ  = 36;
 

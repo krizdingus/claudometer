@@ -20,8 +20,11 @@ lv_color_t status_pill_for(const char *status) {
 }
 
 void apply_screen_styles(lv_obj_t *scr) {
+  lv_obj_set_size(scr, LV_PCT(100), LV_PCT(100));
   lv_obj_set_style_bg_color(scr, c(bg), 0);
   lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+  lv_obj_set_style_border_width(scr, 0, 0);
+  lv_obj_set_style_radius(scr, 0, 0);
   lv_obj_set_style_pad_all(scr, 8, 0);
   lv_obj_set_style_text_color(scr, c(fg), 0);
   lv_obj_set_style_text_font(scr, &lv_font_montserrat_14, 0);

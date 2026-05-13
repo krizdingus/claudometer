@@ -41,6 +41,11 @@ void touch_read_cb(lv_indev_t *, lv_indev_data_t *data) {
 void lvgl_init() {
   lv_init();
 
+  // LVGL 9 removed LV_TICK_CUSTOM; register a callback that returns millis()
+  // so the tick advances. Without this, lv_timer_handler never refreshes the
+  // display after state changes.
+  lv_tick_set_cb([]() -> uint32_t { return millis(); });
+
   auto *disp = lv_display_create(kScreenW, kScreenH);
   lv_display_set_buffers(disp, buf_a, buf_b, sizeof(buf_a),
                          LV_DISPLAY_RENDER_MODE_PARTIAL);

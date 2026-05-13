@@ -25,7 +25,7 @@ void ProvisionScreen::build(lv_obj_t *parent) {
 
   ssid_label_ = lv_label_create(parent);
   lv_obj_set_style_text_color(ssid_label_, theme::c(theme::accent), 0);
-  lv_obj_set_style_text_font(ssid_label_, &lv_font_montserrat_24, 0);
+  lv_obj_set_style_text_font(ssid_label_, &lv_font_montserrat_16, 0);
   lv_obj_align(ssid_label_, LV_ALIGN_TOP_MID, 0, 140);
   lv_label_set_text(ssid_label_, "ClaudeMonitor-XXXX");
 

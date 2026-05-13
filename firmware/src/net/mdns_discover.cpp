@@ -13,9 +13,15 @@ bool MdnsDiscover::find(DaemonAddr &out) {
   int n = MDNS.queryService("claudeusage", "tcp");
   if (n <= 0) return false;
 
-  out.hostname = std::string(MDNS.hostname(0).c_str()) + ".local";
-  out.port = MDNS.port(0);
-  // TXT record: host=<friendly>
+  String host = MDNS.hostname(0);
+  uint16_t port = MDNS.port(0);
+  // ESPmDNS sometimes returns a result count > 0 with empty fields when the
+  // service is not actually on the LAN. Treat anything without a real host
+  // and port as a miss.
+  if (host.length() == 0 || port == 0) return false;
+
+  out.hostname = std::string(host.c_str()) + ".local";
+  out.port = port;
   String friendly = MDNS.txt(0, "host");
   out.display = friendly.length() > 0 ? friendly.c_str() : out.hostname;
   return true;
