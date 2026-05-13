@@ -59,16 +59,20 @@ func serve() error {
 	// Load Claude data
 	claudeDir := filepath.Join(home, ".claude")
 	planInfo, _ := claudedata.ReadPlanInfo(filepath.Join(claudeDir, ".claude.json"))
-	records, err := loadAllJSONL(filepath.Join(claudeDir, "projects"))
+	projectsDir := filepath.Join(claudeDir, "projects")
+
+	initial, err := loadAllJSONL(projectsDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "warning: could not scan Claude projects: %v\n", err)
 	}
+	cache := &recordsCache{}
+	cache.set(initial)
 
 	agg := &stats.Aggregator{
-		Records:  records,
-		PlanInfo: planInfo,
-		Routines: routines.NewFetcher(60 * time.Second),
-		Now:      time.Now,
+		GetRecords: cache.get,
+		PlanInfo:   planInfo,
+		Routines:   routines.NewFetcher(60 * time.Second),
+		Now:        time.Now,
 	}
 
 	srv := server.New(server.Config{
@@ -80,11 +84,50 @@ func serve() error {
 
 	hostname, _ := os.Hostname()
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 	go func() { defer wg.Done(); _ = discovery.Advertise(ctx, "Claude Monitor", hostname, 7842, version, stats.SchemaVersion) }()
 	go func() { defer wg.Done(); _ = srv.ListenAndServe(ctx, listenAddr) }()
+	go func() { defer wg.Done(); reloadLoop(ctx, projectsDir, cache, 30*time.Second) }()
 	wg.Wait()
 	return nil
+}
+
+// recordsCache holds the most recent snapshot of parsed Claude records. The
+// daemon refreshes it from disk on a timer so newly-written assistant turns
+// show up in /v1/stats responses without restarting cydmonitor.
+type recordsCache struct {
+	mu   sync.RWMutex
+	recs []claudedata.Record
+}
+
+func (c *recordsCache) get() []claudedata.Record {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.recs
+}
+
+func (c *recordsCache) set(r []claudedata.Record) {
+	c.mu.Lock()
+	c.recs = r
+	c.mu.Unlock()
+}
+
+func reloadLoop(ctx context.Context, projectsDir string, cache *recordsCache, interval time.Duration) {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			recs, err := loadAllJSONL(projectsDir)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "warning: reload scan failed: %v\n", err)
+				continue
+			}
+			cache.set(recs)
+		}
+	}
 }
 
 func loadAllJSONL(projectsDir string) ([]claudedata.Record, error) {

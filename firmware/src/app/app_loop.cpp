@@ -183,8 +183,12 @@ void perform_poll() {
 
   Stats fresh;
   std::string token = nvs_ ? nvs_->token() : "";
-  if (stats_client_ && stats_client_->fetch(daemon_base_url_, token,
-                          tileview_ ? tileview_->neighbor_mask() : 0, fresh)) {
+  uint8_t mask = tileview_ ? tileview_->neighbor_mask() : 0;
+  bool ok = stats_client_ && stats_client_->fetch(daemon_base_url_, token, mask, fresh);
+  Serial.printf("poll url=%s mask=0x%02X ok=%d total=%d sess=%d%%\n",
+                daemon_base_url_.c_str(), mask, ok ? 1 : 0,
+                fresh.models_today.total_tokens, fresh.session.pct_used);
+  if (ok) {
     last_stats_ = fresh;
     last_stats_.stale = false;
     update_all_screens(last_stats_);
