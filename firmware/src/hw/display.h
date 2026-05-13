@@ -11,7 +11,7 @@ class CydDisplay : public lgfx::LGFX_Device {
   CydDisplay();
 
  private:
-  lgfx::Panel_ILI9341 panel_;
+  lgfx::Panel_ST7789 panel_;
   lgfx::Bus_SPI bus_;
   lgfx::Light_PWM light_;
 };

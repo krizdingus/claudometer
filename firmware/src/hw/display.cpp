@@ -32,7 +32,7 @@ CydDisplay::CydDisplay() {
     cfg.panel_height = 320;
     cfg.offset_rotation = 0;
     cfg.readable = false;
-    cfg.invert = false;
+    cfg.invert = true;
     cfg.rgb_order = false;
     cfg.dlen_16bit = false;
     cfg.bus_shared = false;
