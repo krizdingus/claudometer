@@ -48,20 +48,22 @@ CydDisplay::CydDisplay() {
     panel_.setLight(&light_);
   }
   {
-    // Touch shares HSPI with the display; LovyanGFX handles CS arbitration.
+    // Touch lives on its own VSPI bus on the CYD — separate from the display.
     auto cfg = touch_.config();
-    cfg.x_min = 300;
-    cfg.x_max = 3900;
+    // X is mirrored relative to the display on this CYD batch; swap min/max
+    // so swipes track the finger direction instead of opposing it.
+    cfg.x_min = 3900;
+    cfg.x_max = 300;
     cfg.y_min = 200;
     cfg.y_max = 3700;
     cfg.pin_int = cyd::pins::XPT_IRQ;
-    cfg.bus_shared = true;
+    cfg.bus_shared = false;
     cfg.offset_rotation = 0;
-    cfg.spi_host = HSPI_HOST;
+    cfg.spi_host = VSPI_HOST;
     cfg.freq = 1000000;
-    cfg.pin_sclk = cyd::pins::TFT_SCLK;
-    cfg.pin_mosi = cyd::pins::TFT_MOSI;
-    cfg.pin_miso = cyd::pins::TFT_MISO;
+    cfg.pin_sclk = cyd::pins::XPT_SCLK;
+    cfg.pin_mosi = cyd::pins::XPT_MOSI;
+    cfg.pin_miso = cyd::pins::XPT_MISO;
     cfg.pin_cs   = cyd::pins::XPT_CS;
     touch_.config(cfg);
     panel_.setTouch(&touch_);
