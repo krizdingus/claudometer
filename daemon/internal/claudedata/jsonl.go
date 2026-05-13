@@ -16,8 +16,12 @@ type Usage struct {
 	CacheCreation int
 }
 
+// Total returns the tokens that count against plan limits. Anthropic does
+// not charge cache_read_input_tokens against your quota (they're heavily
+// discounted), so they're excluded; only Input + Output + CacheCreation
+// contribute to session blocks and weekly budgets.
 func (u Usage) Total() int {
-	return u.Input + u.Output + u.CacheRead + u.CacheCreation
+	return u.Input + u.Output + u.CacheCreation
 }
 
 type Record struct {
