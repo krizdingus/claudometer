@@ -18,6 +18,7 @@ func TodayUsage(records []Record, now time.Time) map[string]int {
 	return out
 }
 
+// Total returns the sum of all values in m.
 func Total(m map[string]int) int {
 	s := 0
 	for _, v := range m {
