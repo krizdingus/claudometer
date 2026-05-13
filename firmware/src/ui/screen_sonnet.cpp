@@ -9,7 +9,7 @@ namespace cyd {
 
 void ScreenSonnet::build(lv_obj_t *parent) {
   auto *title = lv_label_create(parent);
-  lv_label_set_text(title, "Sonnet · This Week");
+  lv_label_set_text(title, "Sonnet - This Week");
   lv_obj_set_style_text_color(title, theme::c(theme::fg_muted), 0);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_12, 0);
   lv_obj_align(title, LV_ALIGN_TOP_LEFT, 4, 0);
@@ -50,11 +50,11 @@ void ScreenSonnet::update(const Stats &s) {
            s.sonnet.used / 1000, s.sonnet.cap / 1000);
   lv_label_set_text(amount_, buf);
 
-  const char *pace = "—";
+  const char *pace = "-";
   uint32_t color = theme::fg_muted;
-  if (s.sonnet.pace == "ahead")    { pace = "↑ ahead of pace";    color = theme::yellow; }
-  else if (s.sonnet.pace == "on_track") { pace = "→ on pace";     color = theme::green;  }
-  else if (s.sonnet.pace == "behind")   { pace = "↓ behind pace"; color = theme::blue;   }
+  if (s.sonnet.pace == "ahead")         { pace = "ahead of pace";  color = theme::yellow; }
+  else if (s.sonnet.pace == "on_track") { pace = "on pace";        color = theme::green;  }
+  else if (s.sonnet.pace == "behind")   { pace = "behind pace";    color = theme::blue;   }
   lv_label_set_text(pace_, pace);
   lv_obj_set_style_text_color(pace_, theme::c(color), 0);
 }

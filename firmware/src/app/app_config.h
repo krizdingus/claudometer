@@ -25,7 +25,6 @@ enum Screen : uint8_t {
   SCR_SESSION = 0,
   SCR_MODELS,
   SCR_SONNET,
-  SCR_CHAT,
   SCR_ROUTINES,
   SCR_BUDGETS,
   SCR_COUNT,

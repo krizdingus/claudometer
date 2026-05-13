@@ -74,7 +74,7 @@ void ScreenSession::update(const Stats &s) {
 
   if (!s.session.resets_at.empty()) {
     char r[40];
-    snprintf(r, sizeof(r), "resets %s · %dm left",
+    snprintf(r, sizeof(r), "resets %s, %dm left",
              s.session.resets_at.c_str(), s.session.minutes_remaining);
     lv_label_set_text(resets_label_, r);
   } else {

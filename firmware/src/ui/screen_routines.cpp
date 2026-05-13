@@ -78,7 +78,7 @@ void ScreenRoutines::update(const Stats &s) {
     lv_label_set_text(pill_label, r.status.c_str());
 
     char w[40];
-    snprintf(w, sizeof(w), "last %s · next %s",
+    snprintf(w, sizeof(w), "last %s, next %s",
              r.last_run.c_str(), r.next_run.c_str());
     lv_label_set_text(rows_[i].when, w);
   }

@@ -20,7 +20,7 @@ class ScreenBudgets {
   };
 
  private:
-  Row code_all_, code_opus_, chat_;
+  Row code_all_, code_opus_;
   lv_obj_t *plan_ = nullptr;
   lv_obj_t *resets_ = nullptr;
   lv_obj_t *warn_ = nullptr;
