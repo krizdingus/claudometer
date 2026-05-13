@@ -14,7 +14,7 @@
 #define LV_TICK_CUSTOM_INCLUDE "Arduino.h"
 #define LV_TICK_CUSTOM_SYS_TIME_EXPR (millis())
 
-#define LV_MEM_SIZE (16U * 1024U)
+#define LV_MEM_SIZE (40U * 1024U)
 
 #define LV_USE_PERF_MONITOR 0
 #define LV_USE_MEM_MONITOR  0
