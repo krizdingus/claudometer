@@ -21,6 +21,7 @@ bool parse_stats(const char *data, size_t len, Stats &out) {
   out.schema = doc["schema"] | 0;
   if (out.schema != 1) return false;
   out.generated_at = doc["generated_at"] | "";
+  out.local_time = doc["local_time"] | "";
 
   JsonObjectConst s = doc["session"].as<JsonObjectConst>();
   out.session.pct_used = s["pct_used"] | 0;

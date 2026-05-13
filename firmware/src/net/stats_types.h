@@ -55,6 +55,7 @@ struct BudgetsStat {
 struct Stats {
   int schema = 0;
   std::string generated_at;
+  std::string local_time; // HH:MM from daemon host's local TZ
   SessionStat session;
   ModelsTodayStat models_today;
   SonnetWeeklyStat sonnet;
