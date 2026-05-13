@@ -8,6 +8,7 @@
 #include <lvgl.h>
 
 #include "app/app_config.h"
+#include "app/long_press.h"
 #include "app/state_machine.h"
 #include "hw/display.h"
 #include "hw/nvs.h"
@@ -282,6 +283,15 @@ void app_init() {
 
 void app_tick() {
   lvgl_tick();
+  static LongPress long_press;
+  auto ev = touch().poll();
+  if (long_press.update(ev.pressed, millis(), kLongPressMs)) {
+    Serial.println("factory reset triggered");
+    nvs_->factory_reset();
+    ctx_ = Context{};
+    pending_code_.clear();
+    apply_event(Event::FACTORY_RESET);
+  }
   switch (current_state) {
     case State::PROVISION:  perform_provision(); break;
     case State::DISCOVER:   perform_discover();  break;
