@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "generated_at": "2026-05-13T14:23:00-07:00",
+  "session": {
+    "pct_used": 67,
+    "minutes_remaining": 98,
+    "resets_at": "16:01",
+    "models": [
+      {"model": "claude-sonnet-4-6", "tokens": 412000},
+      {"model": "claude-opus-4-7", "tokens": 88000}
+    ]
+  },
+  "models_today": {
+    "total_tokens": 612000,
+    "by_model": [
+      {"model": "claude-opus-4-7", "tokens": 102000},
+      {"model": "claude-sonnet-4-6", "tokens": 480000},
+      {"model": "claude-haiku-4-5", "tokens": 30000}
+    ],
+    "est_cost_usd": 7.41
+  },
+  "sonnet": {
+    "weekly_pct": 58,
+    "used": 1160000,
+    "cap": 2000000,
+    "pace": "on_track"
+  },
+  "chat": {
+    "messages_today": 42,
+    "daily_cap": 200,
+    "resets_at": "00:00"
+  },
+  "routines": [
+    {"name": "babysit-prs", "status": "ok", "last_run": "12:00", "next_run": "17:00"},
+    {"name": "morning-digest", "status": "slow", "last_run": "09:01", "next_run": "—"}
+  ],
+  "budgets": {
+    "code_all": 71,
+    "code_opus": 89,
+    "chat": 22,
+    "plan": "max-20x",
+    "resets_in": "3d19h"
+  }
+}
