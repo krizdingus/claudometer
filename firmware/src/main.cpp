@@ -1,4 +1,7 @@
 // firmware/src/main.cpp
+
+#ifndef UNIT_TEST
+
 #include <Arduino.h>
 
 void setup() {
@@ -10,3 +13,5 @@ void setup() {
 void loop() {
   delay(1000);
 }
+
+#endif  // UNIT_TEST
