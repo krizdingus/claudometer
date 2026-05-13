@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+	"strconv"
 )
 
 type Plan string
@@ -29,6 +30,14 @@ type Caps struct {
 }
 
 func ReadPlanInfo(path string) (PlanInfo, error) {
+	// CYDMONITOR_PLAN overrides anything we read from disk. Claude Code does
+	// not currently store the plan tier in ~/.claude.json in a way we can
+	// reliably detect, so this env var is the supported way to tell the
+	// daemon "I'm on Max-5x" / "Max-20x" / etc. Values: free, pro, max-5x,
+	// max-20x.
+	if override := os.Getenv("CYDMONITOR_PLAN"); override != "" {
+		return PlanInfo{Plan: Plan(override)}, nil
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -46,17 +55,49 @@ func ReadPlanInfo(path string) (PlanInfo, error) {
 	return info, nil
 }
 
-// PlanCaps returns approximate token caps per plan tier.
-// These are conservative estimates; refine as Anthropic publishes exact numbers.
+// PlanCaps returns approximate token caps per plan tier. Anthropic does not
+// publish these as exact numbers; the Max-5x values below are reverse-derived
+// from live percentages reported by claude.ai's usage page vs our local
+// (cache_read-excluded) token counts. Max-20x is scaled 4x off that.
+//
+// Override any cap at runtime with the matching env var:
+//   CYDMONITOR_SESSION_TOKENS, CYDMONITOR_WEEKLY_ALL,
+//   CYDMONITOR_WEEKLY_OPUS, CYDMONITOR_DAILY_CHAT_MESSAGES.
 func PlanCaps(p Plan) Caps {
+	var c Caps
 	switch p {
 	case PlanMax20x:
-		return Caps{SessionBlockTokens: 3_000_000, WeeklyAllModels: 40_000_000, WeeklyOpusOnly: 8_000_000, DailyChatMessages: 800}
+		c = Caps{SessionBlockTokens: 20_000_000, WeeklyAllModels: 320_000_000, WeeklyOpusOnly: 64_000_000, DailyChatMessages: 800}
 	case PlanMax5x:
-		return Caps{SessionBlockTokens: 1_000_000, WeeklyAllModels: 10_000_000, WeeklyOpusOnly: 2_000_000, DailyChatMessages: 400}
+		c = Caps{SessionBlockTokens: 5_000_000, WeeklyAllModels: 80_000_000, WeeklyOpusOnly: 16_000_000, DailyChatMessages: 400}
 	case PlanPro:
-		return Caps{SessionBlockTokens: 200_000, WeeklyAllModels: 2_000_000, WeeklyOpusOnly: 0, DailyChatMessages: 200}
+		c = Caps{SessionBlockTokens: 1_000_000, WeeklyAllModels: 8_000_000, WeeklyOpusOnly: 0, DailyChatMessages: 200}
 	default:
-		return Caps{SessionBlockTokens: 50_000, WeeklyAllModels: 500_000, WeeklyOpusOnly: 0, DailyChatMessages: 50}
+		c = Caps{SessionBlockTokens: 200_000, WeeklyAllModels: 2_000_000, WeeklyOpusOnly: 0, DailyChatMessages: 50}
 	}
+	if v := envInt("CYDMONITOR_SESSION_TOKENS"); v > 0 {
+		c.SessionBlockTokens = v
+	}
+	if v := envInt("CYDMONITOR_WEEKLY_ALL"); v > 0 {
+		c.WeeklyAllModels = v
+	}
+	if v := envInt("CYDMONITOR_WEEKLY_OPUS"); v > 0 {
+		c.WeeklyOpusOnly = v
+	}
+	if v := envInt("CYDMONITOR_DAILY_CHAT_MESSAGES"); v > 0 {
+		c.DailyChatMessages = v
+	}
+	return c
+}
+
+func envInt(key string) int {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil {
+		return 0
+	}
+	return n
 }
