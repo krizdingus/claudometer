@@ -8,8 +8,13 @@
 
 void setup() {
   Serial.begin(115200);
-  delay(200);
+  delay(500);
+  Serial.println();
+  Serial.println("[boot] cydmonitor firmware booting");
+  Serial.flush();
   cyd::app_init();
+  Serial.println("[boot] app_init complete");
+  Serial.flush();
 }
 
 void loop() {
