@@ -5,29 +5,33 @@
 #include <Arduino.h>
 
 #include "hw/display.h"
+#include "hw/touch.h"
 
 void setup() {
   Serial.begin(115200);
   delay(200);
-  Serial.println("cydmonitor firmware booting");
 
   auto &lcd = cyd::display();
   lcd.init();
   lcd.setRotation(0);
   lcd.setBrightness(200);
+  lcd.fillScreen(0x0000);
 
-  lcd.fillScreen(0x0000);                // black
-  lcd.fillRect(0, 0, 240, 80, 0xF800);   // red top
-  lcd.fillRect(0, 80, 240, 80, 0x07E0);  // green middle
-  lcd.fillRect(0, 160, 240, 80, 0x001F); // blue
-  lcd.fillRect(0, 240, 240, 80, 0xFFE0); // yellow bottom
+  auto kind = cyd::touch().probe_and_init();
   lcd.setTextColor(0xFFFF, 0x0000);
-  lcd.setCursor(20, 300);
-  lcd.printf("CYD display OK");
+  lcd.setCursor(10, 10);
+  lcd.printf("touch: %s",
+             kind == cyd::TouchKind::Capacitive ? "capacitive"
+             : kind == cyd::TouchKind::Resistive ? "resistive" : "none");
 }
 
 void loop() {
-  delay(1000);
+  auto ev = cyd::touch().poll();
+  if (ev.pressed) {
+    Serial.printf("touch @ (%d, %d)\n", ev.x, ev.y);
+    cyd::display().fillCircle(ev.x, ev.y, 4, 0xFFFF);
+  }
+  delay(20);
 }
 
 #endif  // UNIT_TEST
