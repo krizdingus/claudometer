@@ -24,3 +24,12 @@ pio test -e native
 
 - ESP32-2432S028C (capacitive, FT6336 touch) — primary
 - ESP32-2432S028R (resistive, XPT2046 touch) — supported
+
+## End-to-end smoke
+
+Spins up the daemon, flashes a connected CYD, and prints a manual checklist
+covering provisioning, mDNS, pairing, and the offline recovery path.
+
+```
+./scripts/e2e.sh
+```
