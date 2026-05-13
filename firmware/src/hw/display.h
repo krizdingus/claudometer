@@ -14,6 +14,7 @@ class CydDisplay : public lgfx::LGFX_Device {
   lgfx::Panel_ST7789 panel_;
   lgfx::Bus_SPI bus_;
   lgfx::Light_PWM light_;
+  lgfx::Touch_XPT2046 touch_;
 };
 
 // Singleton accessor used everywhere.
