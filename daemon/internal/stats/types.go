@@ -10,6 +10,7 @@ const SchemaVersion = 1
 type Stats struct {
 	Schema      int          `json:"schema"`
 	GeneratedAt time.Time    `json:"generated_at"`
+	LocalTime   string       `json:"local_time"` // HH:MM in the daemon host's local TZ
 	Session     Session      `json:"session"`
 	ModelsToday ModelsToday  `json:"models_today"`
 	Sonnet      SonnetWeekly `json:"sonnet"`

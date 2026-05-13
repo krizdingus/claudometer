@@ -23,6 +23,12 @@ void Chrome::attach(lv_obj_t *parent) {
   lv_obj_set_style_border_width(dot_, 0, 0);
   lv_obj_set_style_bg_color(dot_, theme::c(theme::green), 0);
 
+  auto *dot_label = lv_label_create(bar);
+  lv_obj_align(dot_label, LV_ALIGN_LEFT_MID, 16, 0);
+  lv_obj_set_style_text_color(dot_label, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_font(dot_label, &lv_font_montserrat_12, 0);
+  lv_label_set_text(dot_label, "daemon");
+
   clock_ = lv_label_create(bar);
   lv_obj_align(clock_, LV_ALIGN_RIGHT_MID, -4, 0);
   lv_obj_set_style_text_color(clock_, theme::c(theme::fg_muted), 0);

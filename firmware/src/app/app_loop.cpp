@@ -120,7 +120,10 @@ void update_all_screens(const Stats &s) {
   if (scr_chat_) scr_chat_->update(s);
   if (scr_routines_) scr_routines_->update(s);
   if (scr_budgets_) scr_budgets_->update(s);
-  if (chrome_) chrome_->set_health(s.stale ? 1 : 0);
+  if (chrome_) {
+    chrome_->set_health(s.stale ? 1 : 0);
+    if (!s.local_time.empty()) chrome_->set_clock(s.local_time.c_str());
+  }
 }
 
 void perform_provision() {

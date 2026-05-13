@@ -42,6 +42,7 @@ func (a *Aggregator) Build(ctx context.Context) (Stats, error) {
 	out := Stats{
 		Schema:      SchemaVersion,
 		GeneratedAt: now,
+		LocalTime:   now.Local().Format("15:04"),
 		Session:     buildSession(active, caps, now),
 		ModelsToday: buildModelsToday(recs, now),
 		Sonnet:      buildSonnet(recs, caps, now),
