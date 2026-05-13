@@ -23,6 +23,7 @@
 #include "ui/pair_screen.h"
 #include "ui/provision_screen.h"
 #include "ui/screen_budgets.h"
+#include "ui/screen_home.h"
 #include "ui/screen_models.h"
 #include "ui/screen_routines.h"
 #include "ui/screen_session.h"
@@ -39,6 +40,7 @@ Context ctx_;
 Nvs *nvs_ = nullptr;
 Chrome *chrome_ = nullptr;
 Tileview *tileview_ = nullptr;
+ScreenHome *scr_home_ = nullptr;
 ScreenSession *scr_session_ = nullptr;
 ScreenModels *scr_models_ = nullptr;
 ScreenSonnet *scr_sonnet_ = nullptr;
@@ -112,6 +114,7 @@ void on_screen_change(Screen s) {
 void on_pair_confirm() { confirm_pressed_ = true; }
 
 void update_all_screens(const Stats &s) {
+  if (scr_home_) scr_home_->update(s);
   if (scr_session_) scr_session_->update(s);
   if (scr_models_) scr_models_->update(s);
   if (scr_sonnet_) scr_sonnet_->update(s);
@@ -267,11 +270,13 @@ void app_init() {
   tileview_ = new Tileview();
   tileview_->attach(main_layer_);
   tileview_->on_change(&on_screen_change);
+  scr_home_ = new ScreenHome();
   scr_session_ = new ScreenSession();
   scr_models_ = new ScreenModels();
   scr_sonnet_ = new ScreenSonnet();
   scr_routines_ = new ScreenRoutines();
   scr_budgets_ = new ScreenBudgets();
+  scr_home_->build(tileview_->tile(SCR_HOME));
   scr_session_->build(tileview_->tile(SCR_SESSION));
   scr_models_->build(tileview_->tile(SCR_MODELS));
   scr_sonnet_->build(tileview_->tile(SCR_SONNET));

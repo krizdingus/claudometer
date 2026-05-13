@@ -22,7 +22,8 @@ constexpr uint32_t kLongPressMs = 5000;
 // Screen index → bit. The CYD only fetches screens within ±1 of the current
 // one, so this is also the request mask.
 enum Screen : uint8_t {
-  SCR_SESSION = 0,
+  SCR_HOME = 0,
+  SCR_SESSION,
   SCR_MODELS,
   SCR_SONNET,
   SCR_ROUTINES,
