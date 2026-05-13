@@ -14,9 +14,9 @@ namespace {
 
 constexpr uint32_t kScreenW = 240;
 constexpr uint32_t kScreenH = 320;
-constexpr uint32_t kBufRows = 40;
+constexpr uint32_t kBufRows = 20;
 
-// Two partial draw buffers (double-buffered). 240 * 40 * 2 bytes = 19200 each.
+// Two partial draw buffers (double-buffered). 240 * 20 * 2 bytes = 9600 each.
 static lv_color_t buf_a[kScreenW * kBufRows];
 static lv_color_t buf_b[kScreenW * kBufRows];
 
