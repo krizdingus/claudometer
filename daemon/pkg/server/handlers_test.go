@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krizdingus/cydmonitor/daemon/pkg/claudedata"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/pairings"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/routines"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/stats"
+	"github.com/krizdingus/claudometer/daemon/pkg/claudedata"
+	"github.com/krizdingus/claudometer/daemon/pkg/pairings"
+	"github.com/krizdingus/claudometer/daemon/pkg/routines"
+	"github.com/krizdingus/claudometer/daemon/pkg/stats"
 )
 
 type fakeRoutines struct{}

@@ -19,7 +19,7 @@ func TestE2E_PairAndFetchStats(t *testing.T) {
 		t.Skip("skipping e2e in -short mode")
 	}
 	// Build the binary fresh
-	bin := filepath.Join(t.TempDir(), "cydmonitor")
+	bin := filepath.Join(t.TempDir(), "claudometer")
 	if out, err := exec.Command("go", "build", "-o", bin, ".").CombinedOutput(); err != nil {
 		t.Fatalf("build: %v\n%s", err, out)
 	}

@@ -30,12 +30,12 @@ type Caps struct {
 }
 
 func ReadPlanInfo(path string) (PlanInfo, error) {
-	// CYDMONITOR_PLAN overrides anything we read from disk. Claude Code does
+	// CLAUDOMETER_PLAN overrides anything we read from disk. Claude Code does
 	// not currently store the plan tier in ~/.claude.json in a way we can
 	// reliably detect, so this env var is the supported way to tell the
 	// daemon "I'm on Max-5x" / "Max-20x" / etc. Values: free, pro, max-5x,
 	// max-20x.
-	if override := os.Getenv("CYDMONITOR_PLAN"); override != "" {
+	if override := os.Getenv("CLAUDOMETER_PLAN"); override != "" {
 		return PlanInfo{Plan: Plan(override)}, nil
 	}
 	data, err := os.ReadFile(path)
@@ -62,8 +62,8 @@ func ReadPlanInfo(path string) (PlanInfo, error) {
 // 4x off that.
 //
 // Override any cap at runtime with the matching env var:
-//   CYDMONITOR_SESSION_TOKENS, CYDMONITOR_WEEKLY_ALL,
-//   CYDMONITOR_WEEKLY_OPUS, CYDMONITOR_DAILY_CHAT_MESSAGES.
+//   CLAUDOMETER_SESSION_TOKENS, CLAUDOMETER_WEEKLY_ALL,
+//   CLAUDOMETER_WEEKLY_OPUS, CLAUDOMETER_DAILY_CHAT_MESSAGES.
 func PlanCaps(p Plan) Caps {
 	var c Caps
 	switch p {
@@ -76,16 +76,16 @@ func PlanCaps(p Plan) Caps {
 	default:
 		c = Caps{SessionBlockTokens: 200_000, WeeklyAllModels: 1_000_000, WeeklyOpusOnly: 0, DailyChatMessages: 50}
 	}
-	if v := envInt("CYDMONITOR_SESSION_TOKENS"); v > 0 {
+	if v := envInt("CLAUDOMETER_SESSION_TOKENS"); v > 0 {
 		c.SessionBlockTokens = v
 	}
-	if v := envInt("CYDMONITOR_WEEKLY_ALL"); v > 0 {
+	if v := envInt("CLAUDOMETER_WEEKLY_ALL"); v > 0 {
 		c.WeeklyAllModels = v
 	}
-	if v := envInt("CYDMONITOR_WEEKLY_OPUS"); v > 0 {
+	if v := envInt("CLAUDOMETER_WEEKLY_OPUS"); v > 0 {
 		c.WeeklyOpusOnly = v
 	}
-	if v := envInt("CYDMONITOR_DAILY_CHAT_MESSAGES"); v > 0 {
+	if v := envInt("CLAUDOMETER_DAILY_CHAT_MESSAGES"); v > 0 {
 		c.DailyChatMessages = v
 	}
 	return c

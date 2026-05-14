@@ -21,7 +21,7 @@ void DiscoverScreen::build(lv_obj_t *parent) {
   lv_obj_set_style_text_font(status_, &lv_font_montserrat_14, 0);
   lv_obj_align(status_, LV_ALIGN_TOP_MID, 0, 130);
   lv_label_set_text(status_,
-      "Make sure the daemon is\nrunning on your Mac:\n\n  brew install cydmonitor");
+      "Make sure the daemon is\nrunning on your Mac:\n\n  brew install claudometer");
 }
 
 void DiscoverScreen::set_status(const char *s) {

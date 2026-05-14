@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krizdingus/cydmonitor/daemon/pkg/claudedata"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/runner"
+	"github.com/krizdingus/claudometer/daemon/pkg/claudedata"
+	"github.com/krizdingus/claudometer/daemon/pkg/runner"
 )
 
 func TestService_StartAndStop(t *testing.T) {
