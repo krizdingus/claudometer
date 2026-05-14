@@ -2,6 +2,11 @@
 
 #include <ArduinoJson.h>
 
+#ifndef UNIT_TEST
+#include <Arduino.h>
+#include <WiFi.h>
+#endif
+
 namespace cyd {
 
 namespace {
@@ -58,7 +63,44 @@ bool parse_provisioning_json(const std::string &json_line,
 
 #ifndef UNIT_TEST
 
-// Arduino-side body lives here but is defined in the next task.
+namespace {
+
+std::string read_line(uint32_t max_bytes = 1024) {
+  std::string line;
+  line.reserve(256);
+  while (line.size() < max_bytes) {
+    while (!Serial.available()) {
+      delay(10);
+    }
+    int b = Serial.read();
+    if (b < 0) continue;
+    if (b == '\n') return line;
+    if (b == '\r') continue;
+    line.push_back((char)b);
+  }
+  return line;
+}
+
+} // namespace
+
+bool run_usb_provisioning(ProvisioningCreds &out) {
+  uint8_t mac[6] = {0};
+  WiFi.macAddress(mac);
+  Serial.printf("READY %02X:%02X:%02X:%02X:%02X:%02X\n",
+                mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+  for (;;) {
+    std::string line = read_line();
+    if (line.empty()) continue;
+
+    std::string err;
+    if (parse_provisioning_json(line, out, err)) {
+      Serial.print("OK\n");
+      return true;
+    }
+    Serial.printf("ERR %s\n", err.c_str());
+  }
+}
 
 #endif // UNIT_TEST
 
