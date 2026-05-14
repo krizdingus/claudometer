@@ -75,6 +75,7 @@ func New(opts Options) (*Service, error) {
 	agg := &stats.Aggregator{
 		GetRecords: cache.get,
 		PlanInfo:   opts.PlanInfo,
+		Caps:       opts.Caps,
 		Routines:   routines.NewFetcher(60 * time.Second),
 		Now:        time.Now,
 	}
