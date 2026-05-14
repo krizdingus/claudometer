@@ -38,6 +38,8 @@ func main() {
 			os.Exit(cli.ResetPairings(os.Stdout, pairingsPath()))
 		case "add-device":
 			os.Exit(runAddDevice(os.Args[2:]))
+		case "set-plan":
+			os.Exit(runSetPlan(os.Args[2:]))
 		}
 	}
 	if err := serve(); err != nil {
@@ -210,6 +212,19 @@ func resolvePort(explicit string) (string, error) {
 		}
 		return ports[idx-1].Name, nil
 	}
+}
+
+func runSetPlan(args []string) int {
+	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
+		fmt.Fprintln(os.Stderr, "usage: claudometer set-plan <free|pro|max-5x|max-20x>")
+		return 2
+	}
+	path, err := config.DefaultPath()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		return 1
+	}
+	return cli.SetPlanWith(os.Stdout, path, args[0], brewRestartClaudometer)
 }
 
 func promptPlanIfNeeded(supplied string) (string, error) {
