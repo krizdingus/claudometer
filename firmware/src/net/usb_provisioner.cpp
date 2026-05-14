@@ -13,11 +13,17 @@ namespace {
 
 bool require_nonempty_string(JsonDocument &doc, const char *key,
                              std::string &out, std::string &err) {
-  if (!doc[key].is<const char *>()) {
+  JsonVariantConst v = doc[key];
+  if (v.isNull()) {
     err = std::string("missing or non-string: ") + key;
     return false;
   }
-  out = doc[key].as<const char *>();
+  const char *s = v.as<const char *>();
+  if (!s) {
+    err = std::string("missing or non-string: ") + key;
+    return false;
+  }
+  out = s;
   if (out.empty()) {
     err = std::string("empty: ") + key;
     return false;
@@ -37,7 +43,7 @@ bool parse_provisioning_json(const std::string &json_line,
     return false;
   }
 
-  if (!doc["provision_schema"].is<int>() || doc["provision_schema"].as<int>() != 1) {
+  if (doc["provision_schema"].as<int>() != 1) {
     err = "unsupported provision_schema";
     return false;
   }
@@ -47,7 +53,7 @@ bool parse_provisioning_json(const std::string &json_line,
   if (!require_nonempty_string(doc, "server_host",   out.server_host,   err)) return false;
   if (!require_nonempty_string(doc, "bearer_token",  out.bearer_token,  err)) return false;
 
-  if (!doc["server_port"].is<int>()) {
+  if (doc["server_port"].isNull()) {
     err = "missing or non-int: server_port";
     return false;
   }
