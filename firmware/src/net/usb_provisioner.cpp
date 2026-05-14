@@ -71,41 +71,55 @@ bool parse_provisioning_json(const std::string &json_line,
 
 namespace {
 
-std::string read_line(uint32_t max_bytes = 1024) {
-  std::string line;
-  line.reserve(256);
-  while (line.size() < max_bytes) {
-    while (!Serial.available()) {
-      delay(10);
-    }
+constexpr size_t kMaxLineBytes = 1024;
+std::string g_line_buffer;
+bool g_ready_printed = false;
+
+// Drain whatever bytes are currently available in the serial RX buffer into
+// g_line_buffer. Never blocks. Returns true if a complete '\n'-terminated line
+// was assembled; the line (without trailing '\n') is moved into out and the
+// buffer is reset. Buffer overflow drops accumulated bytes and resyncs.
+bool poll_serial_line(std::string &out) {
+  while (Serial.available()) {
     int b = Serial.read();
     if (b < 0) continue;
-    if (b == '\n') return line;
+    if (b == '\n') {
+      out = std::move(g_line_buffer);
+      g_line_buffer.clear();
+      return true;
+    }
     if (b == '\r') continue;
-    line.push_back((char)b);
+    if (g_line_buffer.size() >= kMaxLineBytes) {
+      g_line_buffer.clear();
+      continue;
+    }
+    g_line_buffer.push_back((char)b);
   }
-  return line;
+  return false;
 }
 
 } // namespace
 
 bool run_usb_provisioning(ProvisioningCreds &out) {
-  uint8_t mac[6] = {0};
-  WiFi.macAddress(mac);
-  Serial.printf("READY %02X:%02X:%02X:%02X:%02X:%02X\n",
-                mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-
-  for (;;) {
-    std::string line = read_line();
-    if (line.empty()) continue;
-
-    std::string err;
-    if (parse_provisioning_json(line, out, err)) {
-      Serial.print("OK\n");
-      return true;
-    }
-    Serial.printf("ERR %s\n", err.c_str());
+  if (!g_ready_printed) {
+    uint8_t mac[6] = {0};
+    WiFi.macAddress(mac);
+    Serial.printf("READY %02X:%02X:%02X:%02X:%02X:%02X\n",
+                  mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    g_ready_printed = true;
   }
+
+  std::string line;
+  if (!poll_serial_line(line)) return false;
+  if (line.empty()) return false;
+
+  std::string err;
+  if (parse_provisioning_json(line, out, err)) {
+    Serial.print("OK\n");
+    return true;
+  }
+  Serial.printf("ERR %s\n", err.c_str());
+  return false;
 }
 
 #endif // UNIT_TEST
