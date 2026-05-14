@@ -26,6 +26,8 @@ func (u Usage) Total() int {
 
 type Record struct {
 	SessionID string
+	RequestID string
+	MessageID string
 	Timestamp time.Time
 	Model     string
 	Tokens    Usage
@@ -33,9 +35,11 @@ type Record struct {
 
 type rawRecord struct {
 	SessionID string    `json:"sessionId"`
+	RequestID string    `json:"requestId"`
 	Timestamp time.Time `json:"timestamp"`
 	Type      string    `json:"type"`
 	Message   *struct {
+		ID    string `json:"id"`
 		Model string `json:"model"`
 		Usage *struct {
 			InputTokens              int `json:"input_tokens"`
@@ -58,6 +62,8 @@ func ParseLine(line []byte) (Record, bool, error) {
 	}
 	return Record{
 		SessionID: raw.SessionID,
+		RequestID: raw.RequestID,
+		MessageID: raw.Message.ID,
 		Timestamp: raw.Timestamp,
 		Model:     raw.Message.Model,
 		Tokens: Usage{
@@ -67,6 +73,30 @@ func ParseLine(line []byte) (Record, bool, error) {
 			CacheCreation: raw.Message.Usage.CacheCreationInputTokens,
 		},
 	}, true, nil
+}
+
+// Dedup removes duplicate assistant records that share the same
+// (MessageID, RequestID) pair. Claude Code writes the same assistant turn to
+// JSONL multiple times — once per streaming iteration, and again when the same
+// session is resumed from a worktree — so summing raw records double-counts
+// tokens. Records with an empty MessageID are kept as-is since they cannot be
+// distinguished from each other.
+func Dedup(records []Record) []Record {
+	out := make([]Record, 0, len(records))
+	seen := make(map[string]struct{}, len(records))
+	for _, r := range records {
+		if r.MessageID == "" {
+			out = append(out, r)
+			continue
+		}
+		key := r.MessageID + "\x00" + r.RequestID
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, r)
+	}
+	return out
 }
 
 func ParseReader(r io.Reader) ([]Record, error) {
