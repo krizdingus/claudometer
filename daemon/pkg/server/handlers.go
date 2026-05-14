@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/krizdingus/cydmonitor/daemon/internal/pairings"
-	"github.com/krizdingus/cydmonitor/daemon/internal/stats"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/pairings"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/stats"
 )
 
 type aggregator interface {

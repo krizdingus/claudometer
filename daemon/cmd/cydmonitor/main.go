@@ -11,13 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/krizdingus/cydmonitor/daemon/internal/claudedata"
-	"github.com/krizdingus/cydmonitor/daemon/internal/cli"
-	"github.com/krizdingus/cydmonitor/daemon/internal/discovery"
-	"github.com/krizdingus/cydmonitor/daemon/internal/pairings"
-	"github.com/krizdingus/cydmonitor/daemon/internal/routines"
-	"github.com/krizdingus/cydmonitor/daemon/internal/server"
-	"github.com/krizdingus/cydmonitor/daemon/internal/stats"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/claudedata"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/cli"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/discovery"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/pairings"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/routines"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/server"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/stats"
 )
 
 const (

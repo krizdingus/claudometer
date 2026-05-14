@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	cd "github.com/krizdingus/cydmonitor/daemon/internal/claudedata"
+	cd "github.com/krizdingus/cydmonitor/daemon/pkg/claudedata"
 )
 
 func TestMutationSafety(t *testing.T) {
