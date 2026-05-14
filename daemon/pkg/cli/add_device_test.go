@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -200,5 +202,84 @@ func TestDefaultDeviceName_DerivesFromMAC(t *testing.T) {
 	got := cli.DefaultDeviceName("AA:BB:CC:DD:EE:FF")
 	if got != "cyd-ddeeff" {
 		t.Errorf("DefaultDeviceName = %q, want cyd-ddeeff", got)
+	}
+}
+
+func TestAddDevice_WritesPlanToConfig(t *testing.T) {
+	pairSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"token":"tok"}`))
+	}))
+	defer pairSrv.Close()
+
+	cfgDir := t.TempDir()
+	cfgPath := filepath.Join(cfgDir, "config.json")
+	os.WriteFile(cfgPath, []byte(`{"plan_tier":"free","listen_addr":"0.0.0.0:7842"}`), 0o600)
+
+	var restartCalls int
+	svcs := &stubServices{
+		probe:       func(string, time.Duration) (string, bool, error) { return "AA:BB:CC:DD:EE:99", true, nil },
+		provision:   func(string, provisioner.Creds, time.Duration) error { return nil },
+		waitForPoll: func(string, time.Duration) error { return nil },
+	}
+
+	out := &bytes.Buffer{}
+	err := cli.AddDeviceWith(svcs, cli.AddDeviceOptions{
+		Port:         "/dev/x",
+		WifiSSID:     "x",
+		WifiPass:     "y",
+		Plan:         "max-5x",
+		AdminPairURL: pairSrv.URL,
+		ServerHost:   "h",
+		ServerPort:   7842,
+		CacheDir:     "/tmp",
+		ConfigPath:   cfgPath,
+		ServiceRestarter: func() error {
+			restartCalls++
+			return nil
+		},
+		Out: out,
+	})
+	if err != nil {
+		t.Fatalf("AddDeviceWith: %v", err)
+	}
+
+	data, _ := os.ReadFile(cfgPath)
+	if !strings.Contains(string(data), `"plan_tier": "max-5x"`) {
+		t.Errorf("config not updated; got: %s", data)
+	}
+	if restartCalls != 1 {
+		t.Errorf("restartCalls = %d, want 1", restartCalls)
+	}
+}
+
+func TestAddDevice_EmptyPlanLeavesConfigAlone(t *testing.T) {
+	pairSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"token":"tok"}`))
+	}))
+	defer pairSrv.Close()
+
+	cfgDir := t.TempDir()
+	cfgPath := filepath.Join(cfgDir, "config.json")
+	original := `{"plan_tier":"free","listen_addr":"0.0.0.0:7842"}`
+	os.WriteFile(cfgPath, []byte(original), 0o600)
+
+	svcs := &stubServices{
+		probe:       func(string, time.Duration) (string, bool, error) { return "AA:BB:CC:DD:EE:88", true, nil },
+		provision:   func(string, provisioner.Creds, time.Duration) error { return nil },
+		waitForPoll: func(string, time.Duration) error { return nil },
+	}
+
+	err := cli.AddDeviceWith(svcs, cli.AddDeviceOptions{
+		Port: "/dev/x", WifiSSID: "x", WifiPass: "y",
+		AdminPairURL: pairSrv.URL, ServerHost: "h", ServerPort: 7842, CacheDir: "/tmp",
+		ConfigPath: cfgPath,
+		Out:        &bytes.Buffer{},
+	})
+	if err != nil {
+		t.Fatalf("AddDeviceWith: %v", err)
+	}
+	data, _ := os.ReadFile(cfgPath)
+	if !strings.Contains(string(data), `"plan_tier":"free"`) {
+		t.Errorf("config was modified despite empty Plan; got: %s", data)
 	}
 }

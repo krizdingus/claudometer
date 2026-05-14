@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/krizdingus/claudometer/daemon/pkg/config"
 	"github.com/krizdingus/claudometer/daemon/pkg/flasher"
 	"github.com/krizdingus/claudometer/daemon/pkg/provisioner"
 )
@@ -32,6 +33,15 @@ type AddDeviceOptions struct {
 	ProbeTimeout     time.Duration
 	ProvisionTimeout time.Duration
 	PollTimeout      time.Duration
+
+	// Plan, if non-empty, is written into the config file's plan_tier field
+	// after successful pairing. Valid values: "free", "pro", "max-5x", "max-20x".
+	Plan string
+	// ConfigPath is where to write the plan_tier update. Empty = skip the write.
+	ConfigPath string
+	// ServiceRestarter is called after the config write to restart the
+	// background daemon so it picks up the new plan. nil = skip restart.
+	ServiceRestarter func() error
 }
 
 // Services is the test seam for AddDevice.
@@ -127,7 +137,31 @@ func AddDeviceWith(svcs Services, opts AddDeviceOptions) error {
 		return fmt.Errorf("device didn't connect within %s: %w (check WiFi password and signal)", opts.PollTimeout, err)
 	}
 	fmt.Fprintf(opts.Out, "%s connected.\n", name)
+
+	if opts.Plan != "" && opts.ConfigPath != "" {
+		if err := updatePlanInConfig(opts.ConfigPath, opts.Plan); err != nil {
+			fmt.Fprintf(opts.Out, "warning: failed to write plan tier to %s: %v\n", opts.ConfigPath, err)
+		} else {
+			fmt.Fprintf(opts.Out, "Updated plan tier to %s in %s.\n", opts.Plan, opts.ConfigPath)
+			if opts.ServiceRestarter != nil {
+				if err := opts.ServiceRestarter(); err != nil {
+					fmt.Fprintf(opts.Out, "warning: failed to restart service: %v\n  Run 'brew services restart claudometer' to apply.\n", err)
+				} else {
+					fmt.Fprintln(opts.Out, "Restarted claudometer service.")
+				}
+			}
+		}
+	}
 	return nil
+}
+
+func updatePlanInConfig(path, plan string) error {
+	s, err := config.Load(path)
+	if err != nil {
+		return err
+	}
+	s.PlanTier = plan
+	return config.Save(path, s)
 }
 
 // DefaultDeviceName derives "cyd-aabbcc" from the last 3 octets of a MAC.

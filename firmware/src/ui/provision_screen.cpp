@@ -18,7 +18,7 @@ void ProvisionScreen::build(lv_obj_t *parent) {
   auto *heading = lv_label_create(parent);
   lv_label_set_long_mode(heading, LV_LABEL_LONG_WRAP);
   lv_obj_set_width(heading, 220);
-  lv_label_set_text(heading, "Open CYDMonitor on\nyour computer");
+  lv_label_set_text(heading, "Run claudometer\nadd-device");
   lv_obj_set_style_text_color(heading, theme::c(theme::fg), 0);
   lv_obj_set_style_text_font(heading, &lv_font_montserrat_16, 0);
   lv_obj_align(heading, LV_ALIGN_TOP_LEFT, 8, 90);
@@ -27,7 +27,7 @@ void ProvisionScreen::build(lv_obj_t *parent) {
   lv_label_set_long_mode(body, LV_LABEL_LONG_WRAP);
   lv_obj_set_width(body, 220);
   lv_label_set_text(body,
-      "Connect this device\nvia USB. The desktop\napp will set it up.");
+      "Connect this device\nvia USB and run\nthe command on your\ncomputer.");
   lv_obj_set_style_text_color(body, theme::c(theme::fg_muted), 0);
   lv_obj_set_style_text_font(body, &lv_font_montserrat_14, 0);
   lv_obj_align(body, LV_ALIGN_TOP_LEFT, 8, 150);

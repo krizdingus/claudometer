@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strconv"
@@ -20,7 +21,7 @@ import (
 )
 
 const (
-	version    = "0.1.0-dev"
+	version    = "0.1.1"
 	listenAddr = "0.0.0.0:7842"
 	statusURL  = "http://127.0.0.1:7842"
 )
@@ -37,6 +38,8 @@ func main() {
 			os.Exit(cli.ResetPairings(os.Stdout, pairingsPath()))
 		case "add-device":
 			os.Exit(runAddDevice(os.Args[2:]))
+		case "set-plan":
+			os.Exit(runSetPlan(os.Args[2:]))
 		}
 	}
 	if err := serve(); err != nil {
@@ -126,6 +129,7 @@ func runAddDevice(args []string) int {
 	firmwareVersion := fs.String("firmware-version", "", "release version to download (default: latest)")
 	noFlash := fs.Bool("no-flash", false, "fail if firmware not present (don't auto-flash)")
 	reflash := fs.Bool("reflash", false, "flash even if firmware already present")
+	plan := fs.String("plan", "", "Claude plan tier: free | pro | max-5x | max-20x (default: prompt)")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -144,25 +148,34 @@ func runAddDevice(args []string) int {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		return 1
 	}
+	resolvedPlan, err := promptPlanIfNeeded(*plan)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		return 1
+	}
 
 	home, _ := os.UserHomeDir()
 	cacheDir := filepath.Join(home, ".cache", "claudometer", "firmware")
 	listenHost, listenPort := splitListenAddr()
+	configPath, _ := config.DefaultPath()
 
 	err = cli.AddDevice(cli.AddDeviceOptions{
-		Port:            resolvedPort,
-		WifiSSID:        resolvedSSID,
-		WifiPass:        resolvedPass,
-		Name:            *name,
-		FirmwareDir:     *firmwareDir,
-		FirmwareVersion: *firmwareVersion,
-		NoFlash:         *noFlash,
-		Reflash:         *reflash,
-		AdminPairURL:    fmt.Sprintf("http://127.0.0.1:%d/v1/admin/pair", listenPort),
-		ServerHost:      listenHost,
-		ServerPort:      listenPort,
-		CacheDir:        cacheDir,
-		Out:             os.Stdout,
+		Port:             resolvedPort,
+		WifiSSID:         resolvedSSID,
+		WifiPass:         resolvedPass,
+		Name:             *name,
+		FirmwareDir:      *firmwareDir,
+		FirmwareVersion:  *firmwareVersion,
+		NoFlash:          *noFlash,
+		Reflash:          *reflash,
+		AdminPairURL:     fmt.Sprintf("http://127.0.0.1:%d/v1/admin/pair", listenPort),
+		ServerHost:       listenHost,
+		ServerPort:       listenPort,
+		CacheDir:         cacheDir,
+		Out:              os.Stdout,
+		Plan:             resolvedPlan,
+		ConfigPath:       configPath,
+		ServiceRestarter: brewRestartClaudometer,
 	})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -199,6 +212,61 @@ func resolvePort(explicit string) (string, error) {
 		}
 		return ports[idx-1].Name, nil
 	}
+}
+
+func runSetPlan(args []string) int {
+	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
+		fmt.Fprintln(os.Stderr, "usage: claudometer set-plan <free|pro|max-5x|max-20x>")
+		return 2
+	}
+	path, err := config.DefaultPath()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		return 1
+	}
+	return cli.SetPlanWith(os.Stdout, path, args[0], brewRestartClaudometer)
+}
+
+func promptPlanIfNeeded(supplied string) (string, error) {
+	if supplied != "" {
+		if !isValidPlan(supplied) {
+			return "", fmt.Errorf("invalid --plan %q (must be free, pro, max-5x, or max-20x)", supplied)
+		}
+		return supplied, nil
+	}
+	fmt.Println("Plan tier (free | pro | max-5x | max-20x) [free]:")
+	reader := bufio.NewReader(os.Stdin)
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	plan := strings.TrimSpace(line)
+	if plan == "" {
+		plan = "free"
+	}
+	if !isValidPlan(plan) {
+		return "", fmt.Errorf("invalid plan %q (must be free, pro, max-5x, or max-20x)", plan)
+	}
+	return plan, nil
+}
+
+func isValidPlan(p string) bool {
+	switch p {
+	case "free", "pro", "max-5x", "max-20x":
+		return true
+	}
+	return false
+}
+
+func brewRestartClaudometer() error {
+	if _, err := exec.LookPath("brew"); err != nil {
+		return err
+	}
+	out, err := exec.Command("brew", "services", "restart", "claudometer").CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
 }
 
 func promptWifiIfNeeded(ssid, password string) (string, string, error) {
