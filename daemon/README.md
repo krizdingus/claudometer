@@ -16,8 +16,8 @@ This builds the binary from source (Go is installed as a transparent build-time 
 ### From source (dev / fallback)
 
 ```bash
-git clone https://github.com/krizdingus/cyd-claude-usage-monitor.git
-cd cyd-claude-usage-monitor/daemon
+git clone https://github.com/krizdingus/claudometer.git
+cd claudometer/daemon
 make build
 ./bin/claudometer
 ```
