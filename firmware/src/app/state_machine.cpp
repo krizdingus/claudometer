@@ -7,28 +7,23 @@ State next_state(State current, Event event, const Context &ctx) {
 
   switch (current) {
     case State::BOOT:
-      if (!ctx.have_wifi_creds) return State::PROVISION;
-      if (!ctx.have_token) return State::DISCOVER;
+      if (!ctx.have_wifi_creds || !ctx.have_token) return State::PROVISION;
       return State::POLL_RENDER;
 
     case State::PROVISION:
-      if (event == Event::WIFI_OK) return State::DISCOVER;
+      // PROVISION only exits via reboot after writing NVS, so any event other
+      // than FACTORY_RESET keeps us here. We still handle WIFI_OK for symmetry.
+      if (event == Event::WIFI_OK) return State::POLL_RENDER;
       return State::PROVISION;
 
     case State::DISCOVER:
-      if (event == Event::DAEMON_FOUND) {
-        return ctx.have_token ? State::POLL_RENDER : State::PAIR;
-      }
+      if (event == Event::DAEMON_FOUND) return State::POLL_RENDER;
+      if (event == Event::DAEMON_NOT_FOUND) return State::POLL_RENDER;
       if (event == Event::WIFI_FAIL) return State::PROVISION;
       return State::DISCOVER;
 
-    case State::PAIR:
-      if (event == Event::PAIR_CONFIRMED) return State::POLL_RENDER;
-      if (event == Event::PAIR_FAILED) return State::DISCOVER;
-      return State::PAIR;
-
     case State::POLL_RENDER:
-      // DAEMON_UNREACHABLE keeps us here; the caller flips the stale flag.
+      if (event == Event::DAEMON_UNREACHABLE) return State::DISCOVER;
       return State::POLL_RENDER;
   }
   return current;

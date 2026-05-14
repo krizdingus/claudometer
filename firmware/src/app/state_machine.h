@@ -4,9 +4,8 @@ namespace cyd {
 
 enum class State {
   BOOT,
-  PROVISION,    // AP mode, captive portal awaiting WiFi creds
-  DISCOVER,     // WiFi up, scanning mDNS for daemon
-  PAIR,         // showing 4-digit code, awaiting user confirmation
+  PROVISION,    // USB serial mode, awaiting provisioning JSON
+  DISCOVER,     // WiFi up, scanning mDNS for daemon (fallback path)
   POLL_RENDER,  // steady state: poll /v1/stats, draw screens
 };
 
@@ -16,8 +15,6 @@ enum class Event {
   WIFI_FAIL,
   DAEMON_FOUND,
   DAEMON_NOT_FOUND,
-  PAIR_CONFIRMED,
-  PAIR_FAILED,
   DAEMON_UNREACHABLE,
   DAEMON_RECOVERED,
   FACTORY_RESET,
@@ -25,7 +22,7 @@ enum class Event {
 
 struct Context {
   bool have_wifi_creds = false;
-  bool have_token = false;
+  bool have_token = false;  // have full provisioning bundle (server + bearer)
 };
 
 // next_state is a pure function: given current state, an event, and the
