@@ -9,7 +9,7 @@
 namespace cyd {
 
 bool MdnsDiscover::find(DaemonAddr &out) {
-  if (!MDNS.begin("cydmonitor-client")) return false;
+  if (!MDNS.begin("claudometer-client")) return false;
   int n = MDNS.queryService("claudeusage", "tcp");
   if (n <= 0) return false;
 
