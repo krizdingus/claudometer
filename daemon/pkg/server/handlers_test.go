@@ -151,3 +151,57 @@ func TestStatusHandler_ReturnsState(t *testing.T) {
 		t.Errorf("PairedCount = %d, want 1", out.PairedCount)
 	}
 }
+
+func TestAdminPair_LoopbackMintsToken(t *testing.T) {
+	srv, _ := newTestServer(t)
+	body := strings.NewReader(`{"cyd_id":"AA:BB:CC:DD:EE:01","name":"cyd-test"}`)
+	req := httptest.NewRequest(http.MethodPost, "/v1/admin/pair", body)
+	req.RemoteAddr = "127.0.0.1:54321"
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body: %s", rr.Code, rr.Body.String())
+	}
+	var resp struct{ Token string `json:"token"` }
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(resp.Token) != 64 {
+		t.Errorf("token len = %d, want 64", len(resp.Token))
+	}
+}
+
+func TestAdminPair_RejectsNonLoopback(t *testing.T) {
+	srv, _ := newTestServer(t)
+	body := strings.NewReader(`{"cyd_id":"AA:BB:CC:DD:EE:02","name":"cyd-evil"}`)
+	req := httptest.NewRequest(http.MethodPost, "/v1/admin/pair", body)
+	req.RemoteAddr = "192.168.1.50:12345"
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want 403", rr.Code)
+	}
+}
+
+func TestAdminPair_AcceptsIPv6Loopback(t *testing.T) {
+	srv, _ := newTestServer(t)
+	body := strings.NewReader(`{"cyd_id":"AA:BB:CC:DD:EE:03","name":"cyd-ipv6"}`)
+	req := httptest.NewRequest(http.MethodPost, "/v1/admin/pair", body)
+	req.RemoteAddr = "[::1]:54321"
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200; body: %s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestAdminPair_BadJSONReturns400(t *testing.T) {
+	srv, _ := newTestServer(t)
+	req := httptest.NewRequest(http.MethodPost, "/v1/admin/pair", strings.NewReader("not json"))
+	req.RemoteAddr = "127.0.0.1:54321"
+	rr := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", rr.Code)
+	}
+}

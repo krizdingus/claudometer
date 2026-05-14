@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 
 	"github.com/krizdingus/claudometer/daemon/pkg/pairings"
@@ -36,6 +37,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/pair-init", s.pairInit)
 	mux.HandleFunc("POST /v1/pair-verify", s.pairVerify)
 	mux.HandleFunc("GET /v1/status", s.status)
+
+	// Loopback-only:
+	mux.HandleFunc("POST /v1/admin/pair", s.adminPair)
 
 	return mux
 }
@@ -120,4 +124,47 @@ func writeJSON(w http.ResponseWriter, code int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+type adminPairReq struct {
+	CydID string `json:"cyd_id"`
+	Name  string `json:"name"`
+}
+
+type adminPairResp struct {
+	Token string `json:"token"`
+}
+
+func (s *Server) adminPair(w http.ResponseWriter, r *http.Request) {
+	if !isLoopback(r.RemoteAddr) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+	var req adminPairReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.CydID == "" {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	name := req.Name
+	if name == "" {
+		name = req.CydID
+	}
+	tok, err := s.cfg.Store.Add(req.CydID, name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, adminPairResp{Token: tok})
+}
+
+func isLoopback(remoteAddr string) bool {
+	host, _, err := net.SplitHostPort(remoteAddr)
+	if err != nil {
+		host = remoteAddr
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	return ip.IsLoopback()
 }

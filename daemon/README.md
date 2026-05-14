@@ -64,38 +64,27 @@ For dev runs, stop the foreground process and start a new one.
 
 ## Pairing a CYD
 
-The CYD firmware uses a one-shot serial provisioning protocol. See `firmware/src/net/usb_provisioner.h` for protocol details.
+### Quick pairing (recommended)
 
-### Setup workflow
+    claudometer add-device
 
-1. Flash the firmware to your CYD. See [firmware/README.md](../firmware/README.md) for instructions.
+This auto-detects a CYD on USB, prompts for WiFi credentials, downloads the latest firmware if the chip is fresh, flashes, pushes provisioning JSON, and waits for the device to come online. Flags for non-interactive use:
 
-2. Connect the CYD via USB and open a serial console:
-   - macOS: `screen /dev/cu.usbserial-XXX 115200`
-   - Linux: `picocom -b 115200 /dev/ttyUSB0`
+    claudometer add-device --port /dev/cu.usbserial-1110 --ssid MyWifi --name desk-cyd
 
-3. Wait for the firmware to print `READY <mac>` on the serial console.
+Set `CLAUDOMETER_WIFI_PASSWORD` to keep the password out of your shell history.
 
-4. Send a single JSON line (then Enter):
-   ```json
-   {"wifi_ssid":"YourWiFi","wifi_password":"...","server_host":"192.168.x.x","server_port":7842,"bearer_token":"YOUR_TOKEN","provision_schema":1}
-   ```
+Force a re-flash:
 
-5. Create a matching entry in `~/.config/claudometer/pairings.json`. This is an array of pairing objects:
-   ```json
-   [
-     {
-       "token": "YOUR_TOKEN",
-       "cyd_id": "MAC_ADDRESS",
-       "name": "Desk",
-       "created_at": "2026-05-14T12:00:00Z"
-     }
-   ]
-   ```
+    claudometer add-device --reflash
 
-6. The firmware will ACK with `OK`, reboot, and begin polling `/v1/stats` every 30 seconds.
+Use a local firmware build (skip the GitHub release download):
 
-Note: A turnkey `claudometer flash <port>` subcommand is on the roadmap.
+    claudometer add-device --firmware ./firmware/.pio/build/esp32dev
+
+### Manual pairing (fallback)
+
+If you'd rather wire it up by hand: `screen /dev/cu.usbserial-XXX 115200`, wait for `READY <mac>`, paste a single JSON line per the schema in `firmware/src/net/usb_provisioner.h`, then edit `~/.config/claudometer/pairings.json` to include the bearer you put in the JSON. The `claudometer add-device` command exists to replace this.
 
 ## Logs
 
