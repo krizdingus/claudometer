@@ -56,13 +56,27 @@ func DownloadFromBase(baseURL, version, cacheDir string) (FirmwareBundle, error)
 		return bundle, nil
 	}
 	for _, name := range []string{bootloaderName, partitionsName, firmwareName} {
-		url := fmt.Sprintf("%s/%s/%s", strings.TrimRight(baseURL, "/"), version, name)
+		url := buildAssetURL(baseURL, version, name)
 		dest := filepath.Join(dir, name)
 		if err := downloadFile(url, dest); err != nil {
 			return FirmwareBundle{}, fmt.Errorf("download %s: %w", name, err)
 		}
 	}
 	return bundle, nil
+}
+
+// buildAssetURL constructs the GitHub release asset URL. For a specific
+// tag (e.g. "v0.1.0") the pattern is /releases/download/<tag>/<asset>.
+// For "latest" GitHub uses a different magic path: /releases/latest/
+// download/<asset>. baseURL is expected to end in "/releases/download".
+func buildAssetURL(baseURL, version, asset string) string {
+	trimmed := strings.TrimRight(baseURL, "/")
+	if version == "latest" {
+		// strip the trailing "/download" and swap to the /latest/download/<asset> form
+		releasesBase := strings.TrimSuffix(trimmed, "/download")
+		return fmt.Sprintf("%s/latest/download/%s", releasesBase, asset)
+	}
+	return fmt.Sprintf("%s/%s/%s", trimmed, version, asset)
 }
 
 func isCached(b FirmwareBundle) bool {

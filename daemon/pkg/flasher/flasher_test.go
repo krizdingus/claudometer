@@ -46,6 +46,53 @@ func TestDownload_FetchesAndCachesArtifacts(t *testing.T) {
 	}
 }
 
+func TestDownload_LatestUsesGitHubLatestURL(t *testing.T) {
+	var gotPaths []string
+	mux := http.NewServeMux()
+	for _, name := range []string{"bootloader.bin", "partitions.bin", "firmware.bin"} {
+		n := name
+		mux.HandleFunc("/releases/latest/download/"+n, func(w http.ResponseWriter, r *http.Request) {
+			gotPaths = append(gotPaths, r.URL.Path)
+			w.Write([]byte(n))
+		})
+	}
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	_, err := flasher.DownloadFromBase(srv.URL+"/releases/download", "latest", t.TempDir())
+	if err != nil {
+		t.Fatalf("Download(latest): %v", err)
+	}
+	if len(gotPaths) != 3 {
+		t.Errorf("got %d requests, want 3: %v", len(gotPaths), gotPaths)
+	}
+}
+
+func TestDownload_EmptyVersionDefaultsToLatest(t *testing.T) {
+	hit := false
+	mux := http.NewServeMux()
+	mux.HandleFunc("/releases/latest/download/bootloader.bin", func(w http.ResponseWriter, r *http.Request) {
+		hit = true
+		w.Write([]byte("b"))
+	})
+	mux.HandleFunc("/releases/latest/download/partitions.bin", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("p"))
+	})
+	mux.HandleFunc("/releases/latest/download/firmware.bin", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("f"))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	_, err := flasher.DownloadFromBase(srv.URL+"/releases/download", "", t.TempDir())
+	if err != nil {
+		t.Fatalf("Download(empty): %v", err)
+	}
+	if !hit {
+		t.Errorf("empty version did not hit /releases/latest/download/")
+	}
+}
+
 func TestDownload_SkipsExistingCache(t *testing.T) {
 	cacheDir := t.TempDir()
 	dir := filepath.Join(cacheDir, "v0.1.0")
