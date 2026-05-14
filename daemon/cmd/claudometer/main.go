@@ -143,21 +143,25 @@ func runAddDevice(args []string) int {
 		fmt.Fprintln(os.Stderr, "error:", err)
 		return 1
 	}
-	resolvedSSID, resolvedPass, err := promptWifiIfNeeded(*ssid, *password)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
-		return 1
-	}
-	resolvedPlan, err := promptPlanIfNeeded(*plan)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
-		return 1
+
+	var resolvedSSID, resolvedPass, resolvedPlan, configPath string
+	if !*reflash {
+		resolvedSSID, resolvedPass, err = promptWifiIfNeeded(*ssid, *password)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error:", err)
+			return 1
+		}
+		resolvedPlan, err = promptPlanIfNeeded(*plan)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error:", err)
+			return 1
+		}
+		configPath, _ = config.DefaultPath()
 	}
 
 	home, _ := os.UserHomeDir()
 	cacheDir := filepath.Join(home, ".cache", "claudometer", "firmware")
 	listenHost, listenPort := splitListenAddr()
-	configPath, _ := config.DefaultPath()
 
 	err = cli.AddDevice(cli.AddDeviceOptions{
 		Port:             resolvedPort,

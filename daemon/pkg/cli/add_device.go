@@ -73,29 +73,11 @@ func AddDeviceWith(svcs Services, opts AddDeviceOptions) error {
 		opts.PollTimeout = 60 * time.Second
 	}
 
-	mac, found, err := svcs.Probe(opts.Port, opts.ProbeTimeout)
-	if err != nil {
-		return fmt.Errorf("probe %s: %w", opts.Port, err)
-	}
-
-	shouldFlash := !found || opts.Reflash
-	if found && opts.Reflash {
-		fmt.Fprintln(opts.Out, "READY detected but --reflash set; flashing anyway.")
-	}
-	if !found && opts.NoFlash {
-		return fmt.Errorf("no READY seen on %s and --no-flash set; remove --no-flash or run without it", opts.Port)
-	}
-
-	if shouldFlash {
-		fmt.Fprintln(opts.Out, "Flashing firmware...")
-		var bundle flasher.FirmwareBundle
-		if opts.FirmwareDir != "" {
-			bundle, err = flasher.LocalBundle(opts.FirmwareDir)
-		} else {
-			bundle, err = svcs.Download(opts.FirmwareVersion, opts.CacheDir)
-		}
+	if opts.Reflash {
+		fmt.Fprintln(opts.Out, "Flashing firmware (preserving existing pairing)...")
+		bundle, err := loadBundle(svcs, opts)
 		if err != nil {
-			return fmt.Errorf("firmware bundle: %w", err)
+			return err
 		}
 		progress := func(ev flasher.ProgressEvent) {
 			fmt.Fprintf(opts.Out, "  %s: %d%%\n", ev.Offset, ev.Pct)
@@ -103,7 +85,31 @@ func AddDeviceWith(svcs Services, opts AddDeviceOptions) error {
 		if err := svcs.Flash(opts.Port, bundle, progress); err != nil {
 			return fmt.Errorf("flash: %w", err)
 		}
-		// Reprobe to get the MAC and confirm READY post-flash.
+		fmt.Fprintln(opts.Out, "Firmware updated; existing pairing preserved.")
+		return nil
+	}
+
+	mac, found, err := svcs.Probe(opts.Port, opts.ProbeTimeout)
+	if err != nil {
+		return fmt.Errorf("probe %s: %w", opts.Port, err)
+	}
+
+	if !found && opts.NoFlash {
+		return fmt.Errorf("no READY seen on %s and --no-flash set; remove --no-flash or run without it", opts.Port)
+	}
+
+	if !found {
+		fmt.Fprintln(opts.Out, "Flashing firmware...")
+		bundle, err := loadBundle(svcs, opts)
+		if err != nil {
+			return err
+		}
+		progress := func(ev flasher.ProgressEvent) {
+			fmt.Fprintf(opts.Out, "  %s: %d%%\n", ev.Offset, ev.Pct)
+		}
+		if err := svcs.Flash(opts.Port, bundle, progress); err != nil {
+			return fmt.Errorf("flash: %w", err)
+		}
 		mac, found, err = svcs.Probe(opts.Port, 30*time.Second)
 		if err != nil || !found {
 			return fmt.Errorf("post-flash probe failed (err=%v found=%v)", err, found)
@@ -153,6 +159,21 @@ func AddDeviceWith(svcs Services, opts AddDeviceOptions) error {
 		}
 	}
 	return nil
+}
+
+func loadBundle(svcs Services, opts AddDeviceOptions) (flasher.FirmwareBundle, error) {
+	if opts.FirmwareDir != "" {
+		b, err := flasher.LocalBundle(opts.FirmwareDir)
+		if err != nil {
+			return flasher.FirmwareBundle{}, fmt.Errorf("firmware bundle: %w", err)
+		}
+		return b, nil
+	}
+	b, err := svcs.Download(opts.FirmwareVersion, opts.CacheDir)
+	if err != nil {
+		return flasher.FirmwareBundle{}, fmt.Errorf("firmware bundle: %w", err)
+	}
+	return b, nil
 }
 
 func updatePlanInConfig(path, plan string) error {

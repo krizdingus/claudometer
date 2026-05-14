@@ -205,6 +205,68 @@ func TestDefaultDeviceName_DerivesFromMAC(t *testing.T) {
 	}
 }
 
+func TestAddDevice_ReflashSkipsPairAndProvision(t *testing.T) {
+	// --reflash on an already-paired CYD: NVS is intact, the new firmware
+	// won't print READY, and we don't want to mint a new token or rewrite
+	// NVS. The flow must short-circuit after a successful flash.
+	pairCalls := 0
+	pairSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pairCalls++
+		w.Write([]byte(`{"token":"tok"}`))
+	}))
+	defer pairSrv.Close()
+
+	var flashedCount int
+	var probeCount int
+	svcs := &stubServices{
+		probe: func(string, time.Duration) (string, bool, error) {
+			probeCount++
+			return "", false, nil // device is in normal mode, no READY
+		},
+		download: func(v, c string) (flasher.FirmwareBundle, error) {
+			return flasher.FirmwareBundle{Bootloader: "/b", Partitions: "/p", Firmware: "/f"}, nil
+		},
+		flash: func(p string, b flasher.FirmwareBundle, cb func(flasher.ProgressEvent)) error {
+			flashedCount++
+			return nil
+		},
+		provision: func(string, provisioner.Creds, time.Duration) error {
+			t.Fatal("provision must not be called when --reflash is set")
+			return nil
+		},
+		waitForPoll: func(string, time.Duration) error {
+			t.Fatal("waitForPoll must not be called when --reflash is set")
+			return nil
+		},
+	}
+
+	out := &bytes.Buffer{}
+	err := cli.AddDeviceWith(svcs, cli.AddDeviceOptions{
+		Port:         "/dev/x",
+		Reflash:      true,
+		AdminPairURL: pairSrv.URL,
+		ServerHost:   "h",
+		ServerPort:   7842,
+		CacheDir:     "/tmp",
+		Out:          out,
+	})
+	if err != nil {
+		t.Fatalf("AddDeviceWith: %v", err)
+	}
+	if flashedCount != 1 {
+		t.Errorf("flashedCount = %d, want 1", flashedCount)
+	}
+	if probeCount > 1 {
+		t.Errorf("probeCount = %d, want 0 or 1 (no post-flash probe)", probeCount)
+	}
+	if pairCalls != 0 {
+		t.Errorf("pairCalls = %d, want 0", pairCalls)
+	}
+	if !strings.Contains(out.String(), "preserved") {
+		t.Errorf("expected output to mention pairing preserved; got: %s", out.String())
+	}
+}
+
 func TestAddDevice_WritesPlanToConfig(t *testing.T) {
 	pairSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`{"token":"tok"}`))
