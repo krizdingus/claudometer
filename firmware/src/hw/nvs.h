@@ -17,14 +17,16 @@ class Nvs {
   std::string wifi_psk() const;
   void save_wifi(const std::string &ssid, const std::string &psk);
 
-  // Daemon pairing token (64-char lowercase hex).
-  bool has_token() const;
-  std::string token() const;
-  void save_token(const std::string &token);
+  // Daemon server address (host without scheme/port, plus port).
+  bool has_server() const;
+  std::string server_host() const;
+  uint16_t server_port() const;
+  void save_server(const std::string &host, uint16_t port);
 
-  // Last-known daemon host:port (e.g., "krizzo-mbp.local:7842").
-  std::string daemon_host() const;
-  void save_daemon_host(const std::string &host);
+  // Bearer token for the daemon (64-char lowercase hex, provisioned over USB).
+  bool has_bearer_token() const;
+  std::string bearer_token() const;
+  void save_bearer_token(const std::string &token);
 
   // Touch calibration (resistive only). Returns true if cal values were stored.
   bool has_touch_cal() const;
