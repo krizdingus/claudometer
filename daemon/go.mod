@@ -1,4 +1,4 @@
-module github.com/krizdingus/cydmonitor/daemon
+module github.com/krizdingus/claudometer/daemon
 
 go 1.23
 

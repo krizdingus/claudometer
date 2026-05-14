@@ -1,4 +1,4 @@
-// Package runner assembles the cydmonitor service stack (pairings, records
+// Package runner assembles the claudometer service stack (pairings, records
 // cache, reload loop, aggregator, HTTP server, mDNS advertiser) from a single
 // Options struct. The terminal binary and the desktop app both build through
 // it so they share lifecycle and behavior.
@@ -15,12 +15,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/krizdingus/cydmonitor/daemon/pkg/claudedata"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/discovery"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/pairings"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/routines"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/server"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/stats"
+	"github.com/krizdingus/claudometer/daemon/pkg/claudedata"
+	"github.com/krizdingus/claudometer/daemon/pkg/discovery"
+	"github.com/krizdingus/claudometer/daemon/pkg/pairings"
+	"github.com/krizdingus/claudometer/daemon/pkg/routines"
+	"github.com/krizdingus/claudometer/daemon/pkg/server"
+	"github.com/krizdingus/claudometer/daemon/pkg/stats"
 )
 
 type Options struct {

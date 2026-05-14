@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krizdingus/cydmonitor/daemon/pkg/claudedata"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/routines"
+	"github.com/krizdingus/claudometer/daemon/pkg/claudedata"
+	"github.com/krizdingus/claudometer/daemon/pkg/routines"
 )
 
 func atTime(s string) time.Time {
