@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/krizdingus/cydmonitor/daemon/internal/pairings"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/pairings"
 )
 
 func ResetPairings(w io.Writer, path string) int {

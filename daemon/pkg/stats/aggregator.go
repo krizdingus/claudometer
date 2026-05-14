@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/krizdingus/cydmonitor/daemon/internal/claudedata"
-	"github.com/krizdingus/cydmonitor/daemon/internal/routines"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/claudedata"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/routines"
 )
 
 type routinesSource interface {

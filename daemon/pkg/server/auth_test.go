@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/krizdingus/cydmonitor/daemon/internal/pairings"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/pairings"
 )
 
 func TestAuth_RejectsMissingHeader(t *testing.T) {
