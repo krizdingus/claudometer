@@ -27,9 +27,8 @@ pio test -e native
 
 ## End-to-end smoke
 
-Spins up the daemon, flashes a connected CYD, and prints a manual checklist
-covering provisioning, mDNS, pairing, and the offline recovery path.
-
-```
-./scripts/e2e.sh
-```
+Setup happens over USB: the desktop app (or, manually, a serial client at
+115200 baud) sends one JSON line with WiFi credentials, the daemon's host
+and port, and a bearer token. The firmware writes those to NVS and reboots
+into normal polling. mDNS stays in the firmware as a fallback for when the
+daemon's LAN IP changes.
