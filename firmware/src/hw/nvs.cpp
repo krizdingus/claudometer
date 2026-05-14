@@ -6,105 +6,50 @@
 
 namespace cyd {
 
-static const char *kNs = "cydmon";
-static const char *kSsid = "wifi_ssid";
-static const char *kPsk  = "wifi_psk";
-static const char *kTok  = "tok";
-static const char *kHost = "host";
-static const char *kCal  = "tcal";
+namespace {
+constexpr const char *kNs = "cydmon";
+}
+
+static Preferences prefs;
 
 void Nvs::begin() {
-  Preferences p;
-  p.begin(kNs, false);
-  p.end();
+  prefs.begin(kNs, /*readOnly=*/false);
 }
 
-bool Nvs::has_wifi_creds() const {
-  Preferences p; p.begin(kNs, true);
-  bool ok = p.isKey(kSsid) && p.isKey(kPsk);
-  p.end();
-  return ok;
-}
-
-std::string Nvs::wifi_ssid() const {
-  Preferences p; p.begin(kNs, true);
-  String s = p.getString(kSsid, "");
-  p.end();
-  return std::string(s.c_str());
-}
-
-std::string Nvs::wifi_psk() const {
-  Preferences p; p.begin(kNs, true);
-  String s = p.getString(kPsk, "");
-  p.end();
-  return std::string(s.c_str());
-}
-
+bool Nvs::has_wifi_creds() const { return prefs.isKey("wifi_ssid"); }
+std::string Nvs::wifi_ssid() const { return prefs.getString("wifi_ssid", "").c_str(); }
+std::string Nvs::wifi_psk()  const { return prefs.getString("wifi_psk",  "").c_str(); }
 void Nvs::save_wifi(const std::string &ssid, const std::string &psk) {
-  Preferences p; p.begin(kNs, false);
-  p.putString(kSsid, ssid.c_str());
-  p.putString(kPsk, psk.c_str());
-  p.end();
+  prefs.putString("wifi_ssid", ssid.c_str());
+  prefs.putString("wifi_psk",  psk.c_str());
 }
 
-bool Nvs::has_token() const {
-  Preferences p; p.begin(kNs, true);
-  bool ok = p.isKey(kTok);
-  p.end();
-  return ok;
+bool Nvs::has_server() const { return prefs.isKey("srv_host") && prefs.isKey("srv_port"); }
+std::string Nvs::server_host() const { return prefs.getString("srv_host", "").c_str(); }
+uint16_t Nvs::server_port() const { return (uint16_t)prefs.getUInt("srv_port", 0); }
+void Nvs::save_server(const std::string &host, uint16_t port) {
+  prefs.putString("srv_host", host.c_str());
+  prefs.putUInt("srv_port", port);
 }
 
-std::string Nvs::token() const {
-  Preferences p; p.begin(kNs, true);
-  String s = p.getString(kTok, "");
-  p.end();
-  return std::string(s.c_str());
+bool Nvs::has_bearer_token() const { return prefs.isKey("bearer"); }
+std::string Nvs::bearer_token() const { return prefs.getString("bearer", "").c_str(); }
+void Nvs::save_bearer_token(const std::string &token) {
+  prefs.putString("bearer", token.c_str());
 }
 
-void Nvs::save_token(const std::string &t) {
-  Preferences p; p.begin(kNs, false);
-  p.putString(kTok, t.c_str());
-  p.end();
-}
-
-std::string Nvs::daemon_host() const {
-  Preferences p; p.begin(kNs, true);
-  String s = p.getString(kHost, "");
-  p.end();
-  return std::string(s.c_str());
-}
-
-void Nvs::save_daemon_host(const std::string &h) {
-  Preferences p; p.begin(kNs, false);
-  p.putString(kHost, h.c_str());
-  p.end();
-}
-
-bool Nvs::has_touch_cal() const {
-  Preferences p; p.begin(kNs, true);
-  bool ok = p.isKey(kCal);
-  p.end();
-  return ok;
-}
-
+bool Nvs::has_touch_cal() const { return prefs.isKey("touch_cal"); }
 void Nvs::load_touch_cal(uint16_t cal[8]) const {
-  Preferences p; p.begin(kNs, true);
-  p.getBytes(kCal, cal, sizeof(uint16_t) * 8);
-  p.end();
+  prefs.getBytes("touch_cal", cal, sizeof(uint16_t) * 8);
 }
-
 void Nvs::save_touch_cal(const uint16_t cal[8]) {
-  Preferences p; p.begin(kNs, false);
-  p.putBytes(kCal, cal, sizeof(uint16_t) * 8);
-  p.end();
+  prefs.putBytes("touch_cal", cal, sizeof(uint16_t) * 8);
 }
 
 void Nvs::factory_reset() {
-  Preferences p; p.begin(kNs, false);
-  p.clear();
-  p.end();
+  prefs.clear();
 }
 
 } // namespace cyd
 
-#endif  // UNIT_TEST
+#endif // UNIT_TEST
