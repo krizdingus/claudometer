@@ -151,7 +151,7 @@ func loadAllJSONL(projectsDir string) ([]claudedata.Record, error) {
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return claudedata.Dedup(out), nil
 }
 
 func pairingsPath() string {
