@@ -3,21 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"sync"
 	"syscall"
-	"time"
 
 	"github.com/krizdingus/cydmonitor/daemon/pkg/claudedata"
 	"github.com/krizdingus/cydmonitor/daemon/pkg/cli"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/discovery"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/pairings"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/routines"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/server"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/stats"
+	"github.com/krizdingus/cydmonitor/daemon/pkg/runner"
 )
 
 const (
@@ -50,108 +43,25 @@ func serve() error {
 		return err
 	}
 
-	store, err := pairings.NewStore(pairingsPath())
-	if err != nil {
-		return fmt.Errorf("pairings: %w", err)
-	}
-	codes := pairings.NewCodes(2 * time.Minute)
-
-	// Load Claude data
 	claudeDir := filepath.Join(home, ".claude")
 	planInfo, _ := claudedata.ReadPlanInfo(filepath.Join(claudeDir, ".claude.json"))
-	projectsDir := filepath.Join(claudeDir, "projects")
 
-	initial, err := loadAllJSONL(projectsDir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "warning: could not scan Claude projects: %v\n", err)
-	}
-	cache := &recordsCache{}
-	cache.set(initial)
-
-	agg := &stats.Aggregator{
-		GetRecords: cache.get,
-		PlanInfo:   planInfo,
-		Routines:   routines.NewFetcher(60 * time.Second),
-		Now:        time.Now,
-	}
-
-	srv := server.New(server.Config{
-		Store: store, Codes: codes, Aggregator: agg, Version: version,
+	svc, err := runner.New(runner.Options{
+		ListenAddr:   listenAddr,
+		ProjectsDir:  filepath.Join(claudeDir, "projects"),
+		PairingsPath: pairingsPath(),
+		PlanInfo:     planInfo,
+		Caps:         claudedata.PlanCaps(planInfo.Plan),
+		Version:      version,
+		Logger:       func(f string, a ...any) { fmt.Fprintf(os.Stderr, f+"\n", a...) },
 	})
+	if err != nil {
+		return err
+	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
-
-	hostname, _ := os.Hostname()
-	var wg sync.WaitGroup
-	wg.Add(3)
-	go func() { defer wg.Done(); _ = discovery.Advertise(ctx, "Claude Monitor", hostname, 7842, version, stats.SchemaVersion) }()
-	go func() { defer wg.Done(); _ = srv.ListenAndServe(ctx, listenAddr) }()
-	go func() { defer wg.Done(); reloadLoop(ctx, projectsDir, cache, 30*time.Second) }()
-	wg.Wait()
-	return nil
-}
-
-// recordsCache holds the most recent snapshot of parsed Claude records. The
-// daemon refreshes it from disk on a timer so newly-written assistant turns
-// show up in /v1/stats responses without restarting cydmonitor.
-type recordsCache struct {
-	mu   sync.RWMutex
-	recs []claudedata.Record
-}
-
-func (c *recordsCache) get() []claudedata.Record {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.recs
-}
-
-func (c *recordsCache) set(r []claudedata.Record) {
-	c.mu.Lock()
-	c.recs = r
-	c.mu.Unlock()
-}
-
-func reloadLoop(ctx context.Context, projectsDir string, cache *recordsCache, interval time.Duration) {
-	t := time.NewTicker(interval)
-	defer t.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-			recs, err := loadAllJSONL(projectsDir)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "warning: reload scan failed: %v\n", err)
-				continue
-			}
-			cache.set(recs)
-		}
-	}
-}
-
-func loadAllJSONL(projectsDir string) ([]claudedata.Record, error) {
-	var out []claudedata.Record
-	err := filepath.WalkDir(projectsDir, func(path string, d fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			fmt.Fprintf(os.Stderr, "warning: walk %s: %v\n", path, walkErr)
-			return nil
-		}
-		if d.IsDir() || filepath.Ext(d.Name()) != ".jsonl" {
-			return nil
-		}
-		recs, err := claudedata.ParseFile(path)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: skipping %s: %v\n", path, err)
-			return nil
-		}
-		out = append(out, recs...)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return claudedata.Dedup(out), nil
+	return svc.Start(ctx)
 }
 
 func pairingsPath() string {
