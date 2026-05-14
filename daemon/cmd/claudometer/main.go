@@ -1,16 +1,21 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/krizdingus/claudometer/daemon/pkg/claudedata"
 	"github.com/krizdingus/claudometer/daemon/pkg/cli"
 	"github.com/krizdingus/claudometer/daemon/pkg/config"
+	"github.com/krizdingus/claudometer/daemon/pkg/provisioner"
 	"github.com/krizdingus/claudometer/daemon/pkg/runner"
 )
 
@@ -30,6 +35,8 @@ func main() {
 			os.Exit(cli.Status(os.Stdout, statusURL))
 		case "reset-pairings":
 			os.Exit(cli.ResetPairings(os.Stdout, pairingsPath()))
+		case "add-device":
+			os.Exit(runAddDevice(os.Args[2:]))
 		}
 	}
 	if err := serve(); err != nil {
@@ -107,4 +114,123 @@ func migratePairings(home string) {
 		return
 	}
 	_ = os.WriteFile(newPath, data, 0o600)
+}
+
+func runAddDevice(args []string) int {
+	fs := flag.NewFlagSet("add-device", flag.ExitOnError)
+	port := fs.String("port", "", "serial port path (default: auto-detect)")
+	ssid := fs.String("ssid", "", "WiFi SSID")
+	password := fs.String("password", "", "WiFi password (use $CLAUDOMETER_WIFI_PASSWORD env var to avoid shell history)")
+	name := fs.String("name", "", "pairing label (default: cyd-<mac-suffix>)")
+	firmwareDir := fs.String("firmware", "", "local directory containing bootloader.bin/partitions.bin/firmware.bin")
+	firmwareVersion := fs.String("firmware-version", "", "release version to download (default: latest)")
+	noFlash := fs.Bool("no-flash", false, "fail if firmware not present (don't auto-flash)")
+	reflash := fs.Bool("reflash", false, "flash even if firmware already present")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+
+	if *password == "" {
+		*password = os.Getenv("CLAUDOMETER_WIFI_PASSWORD")
+	}
+
+	resolvedPort, err := resolvePort(*port)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		return 1
+	}
+	resolvedSSID, resolvedPass, err := promptWifiIfNeeded(*ssid, *password)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		return 1
+	}
+
+	home, _ := os.UserHomeDir()
+	cacheDir := filepath.Join(home, ".cache", "claudometer", "firmware")
+	listenHost, listenPort := splitListenAddr()
+
+	err = cli.AddDevice(cli.AddDeviceOptions{
+		Port:            resolvedPort,
+		WifiSSID:        resolvedSSID,
+		WifiPass:        resolvedPass,
+		Name:            *name,
+		FirmwareDir:     *firmwareDir,
+		FirmwareVersion: *firmwareVersion,
+		NoFlash:         *noFlash,
+		Reflash:         *reflash,
+		AdminPairURL:    fmt.Sprintf("http://127.0.0.1:%d/v1/admin/pair", listenPort),
+		ServerHost:      listenHost,
+		ServerPort:      listenPort,
+		CacheDir:        cacheDir,
+		Out:             os.Stdout,
+	})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		return 1
+	}
+	return 0
+}
+
+func resolvePort(explicit string) (string, error) {
+	if explicit != "" {
+		return explicit, nil
+	}
+	ports, err := provisioner.EnumeratePorts()
+	if err != nil {
+		return "", err
+	}
+	switch len(ports) {
+	case 0:
+		return "", fmt.Errorf("no USB-serial ports detected; plug in your CYD and try again")
+	case 1:
+		fmt.Printf("Using %s\n", ports[0].Name)
+		return ports[0].Name, nil
+	default:
+		fmt.Println("Multiple serial ports detected:")
+		for i, p := range ports {
+			fmt.Printf("  [%d] %s\n", i+1, p.Name)
+		}
+		fmt.Print("Pick one (number): ")
+		reader := bufio.NewReader(os.Stdin)
+		line, _ := reader.ReadString('\n')
+		idx, err := strconv.Atoi(strings.TrimSpace(line))
+		if err != nil || idx < 1 || idx > len(ports) {
+			return "", fmt.Errorf("invalid selection")
+		}
+		return ports[idx-1].Name, nil
+	}
+}
+
+func promptWifiIfNeeded(ssid, password string) (string, string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	if ssid == "" {
+		fmt.Print("WiFi SSID: ")
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			return "", "", err
+		}
+		ssid = strings.TrimSpace(line)
+	}
+	if password == "" {
+		fmt.Print("WiFi password: ")
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			return "", "", err
+		}
+		password = strings.TrimSpace(line)
+	}
+	if ssid == "" || password == "" {
+		return "", "", fmt.Errorf("both SSID and password are required")
+	}
+	return ssid, password, nil
+}
+
+func splitListenAddr() (string, int) {
+	// The firmware needs a host the CYD can actually reach over the LAN,
+	// so we use <hostname>.local rather than 0.0.0.0 from cfg.ListenAddr.
+	// Port is conventionally 7842; if the user overrides cfg.ListenAddr,
+	// they'll need a future --port-listen flag for v1.
+	host, _ := os.Hostname()
+	host = host + ".local"
+	return host, 7842
 }
