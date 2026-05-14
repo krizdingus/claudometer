@@ -1,13 +1,13 @@
 .PHONY: build test run clean
 
 build:
-	go build -o bin/cydmonitor ./cmd/cydmonitor
+	go build -o bin/claudometer ./cmd/claudometer
 
 test:
 	go test ./...
 
 run: build
-	./bin/cydmonitor
+	./bin/claudometer
 
 clean:
 	rm -rf bin/

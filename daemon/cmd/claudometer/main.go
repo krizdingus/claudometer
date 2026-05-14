@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/krizdingus/cydmonitor/daemon/pkg/claudedata"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/cli"
-	"github.com/krizdingus/cydmonitor/daemon/pkg/runner"
+	"github.com/krizdingus/claudometer/daemon/pkg/claudedata"
+	"github.com/krizdingus/claudometer/daemon/pkg/cli"
+	"github.com/krizdingus/claudometer/daemon/pkg/runner"
 )
 
 const (
@@ -66,5 +66,5 @@ func serve() error {
 
 func pairingsPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "cydmonitor", "pairings.json")
+	return filepath.Join(home, ".config", "claudometer", "pairings.json")
 }

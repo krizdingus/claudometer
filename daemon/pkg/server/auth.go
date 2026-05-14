@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/krizdingus/cydmonitor/daemon/pkg/pairings"
+	"github.com/krizdingus/claudometer/daemon/pkg/pairings"
 )
 
 // RequireToken wraps a handler to enforce a valid Bearer token in the
