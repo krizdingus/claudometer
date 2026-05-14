@@ -14,13 +14,11 @@
 #include "hw/nvs.h"
 #include "hw/touch.h"
 #include "net/mdns_discover.h"
-#include "net/pairing_client.h"
 #include "net/stats_client.h"
-#include "net/wifi_onboarding.h"
+#include "net/usb_provisioner.h"
 #include "ui/chrome.h"
 #include "ui/discover_screen.h"
 #include "ui/lvgl_glue.h"
-#include "ui/pair_screen.h"
 #include "ui/provision_screen.h"
 #include "ui/screen_budgets.h"
 #include "ui/screen_home.h"
@@ -48,21 +46,16 @@ ScreenRoutines *scr_routines_ = nullptr;
 ScreenBudgets *scr_budgets_ = nullptr;
 ProvisionScreen *prov_ = nullptr;
 DiscoverScreen *disc_ = nullptr;
-PairScreen *pair_ = nullptr;
-WifiOnboarding *wifi_ = nullptr;
 MdnsDiscover *mdns_ = nullptr;
-PairingClient *pairing_ = nullptr;
 StatsClient *stats_client_ = nullptr;
 Stats last_stats_;
 std::string daemon_base_url_;
 std::string daemon_display_;
-std::string pending_code_;
 uint32_t next_poll_at_ = 0;
 uint32_t backoff_ms_ = kBackoffStartMs;
-bool confirm_pressed_ = false;
 
 lv_obj_t *root_ = nullptr;
-lv_obj_t *pre_pairing_layer_ = nullptr;   // hosts prov/disc/pair
+lv_obj_t *pre_pairing_layer_ = nullptr;   // hosts prov + disc
 lv_obj_t *main_layer_ = nullptr;          // hosts tileview + chrome
 
 void show_layer(lv_obj_t *layer) {
@@ -72,25 +65,15 @@ void show_layer(lv_obj_t *layer) {
 }
 
 void render_state(State s) {
-  if (s == State::PROVISION || s == State::DISCOVER || s == State::PAIR) {
+  if (s == State::PROVISION || s == State::DISCOVER) {
     show_layer(pre_pairing_layer_);
+    // Pre-pairing children: 0=prov, 1=disc.
     if (s == State::PROVISION) {
-      if (prov_) prov_->set_ap_ssid(wifi_->ap_ssid().c_str());
       lv_obj_clear_flag(lv_obj_get_child(pre_pairing_layer_, 0), LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(lv_obj_get_child(pre_pairing_layer_, 1), LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(lv_obj_get_child(pre_pairing_layer_, 2), LV_OBJ_FLAG_HIDDEN);
-    } else if (s == State::DISCOVER) {
-      lv_obj_add_flag(lv_obj_get_child(pre_pairing_layer_, 0), LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(lv_obj_get_child(pre_pairing_layer_, 1), LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(lv_obj_get_child(pre_pairing_layer_, 2), LV_OBJ_FLAG_HIDDEN);
     } else {
       lv_obj_add_flag(lv_obj_get_child(pre_pairing_layer_, 0), LV_OBJ_FLAG_HIDDEN);
-      lv_obj_add_flag(lv_obj_get_child(pre_pairing_layer_, 1), LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(lv_obj_get_child(pre_pairing_layer_, 2), LV_OBJ_FLAG_HIDDEN);
-      if (pair_) {
-        pair_->set_host(daemon_display_.c_str());
-        pair_->set_code(pending_code_.c_str());
-      }
+      lv_obj_clear_flag(lv_obj_get_child(pre_pairing_layer_, 1), LV_OBJ_FLAG_HIDDEN);
     }
   } else {
     show_layer(main_layer_);
@@ -108,10 +91,8 @@ void apply_event(Event e) {
 
 void on_screen_change(Screen s) {
   if (chrome_) chrome_->set_active_screen(s);
-  next_poll_at_ = 0;   // refetch with new neighbor mask immediately
+  next_poll_at_ = 0;
 }
-
-void on_pair_confirm() { confirm_pressed_ = true; }
 
 void update_all_screens(const Stats &s) {
   if (scr_home_) scr_home_->update(s);
@@ -126,58 +107,37 @@ void update_all_screens(const Stats &s) {
   }
 }
 
-void perform_provision() {
-  std::string ssid, psk;
-  if (wifi_ && wifi_->run_portal(ssid, psk)) {
-    if (nvs_) nvs_->save_wifi(ssid, psk);
-    ctx_.have_wifi_creds = true;
-    apply_event(Event::WIFI_OK);
+void perform_provision_usb() {
+  // Block here until a host sends a valid provisioning JSON.
+  ProvisioningCreds creds;
+  if (!run_usb_provisioning(creds)) return;  // shouldn't happen — it loops
+
+  // Persist to NVS and reboot. On next boot the new state will short-circuit
+  // BOOT → POLL_RENDER.
+  if (nvs_) {
+    nvs_->save_wifi(creds.wifi_ssid, creds.wifi_password);
+    nvs_->save_server(creds.server_host, creds.server_port);
+    nvs_->save_bearer_token(creds.bearer_token);
   }
+  Serial.println("provisioned, restarting");
+  delay(200);
+  ESP.restart();
 }
 
 void perform_discover() {
-  // Try a saved hostname first.
-  std::string host = nvs_ ? nvs_->daemon_host() : "";
-  if (!host.empty()) {
-    daemon_base_url_ = "http://" + host;
-    daemon_display_ = host;
-    apply_event(Event::DAEMON_FOUND);
-    return;
-  }
+  // mDNS fallback when a saved server_host stops responding.
   DaemonAddr addr;
   if (!mdns_ || !mdns_->find(addr)) {
     delay(kMdnsQueryMs);
+    apply_event(Event::DAEMON_NOT_FOUND);
     return;
   }
   char hp[96];
   snprintf(hp, sizeof(hp), "%s:%u", addr.hostname.c_str(), addr.port);
   daemon_base_url_ = std::string("http://") + hp;
   daemon_display_ = addr.display;
-  if (nvs_) nvs_->save_daemon_host(hp);
+  if (nvs_) nvs_->save_server(addr.hostname, addr.port);
   apply_event(Event::DAEMON_FOUND);
-}
-
-void perform_pair() {
-  if (pending_code_.empty()) {
-    if (!pairing_ || !pairing_->init(daemon_base_url_, device_cyd_id(), pending_code_)) {
-      delay(2000);
-      return;
-    }
-    render_state(current_state);  // refresh code on screen
-  }
-  if (!confirm_pressed_) return;
-  confirm_pressed_ = false;
-  std::string token;
-  if (pairing_ && pairing_->verify(daemon_base_url_, device_cyd_id(),
-                      pending_code_, device_name(), token)) {
-    if (nvs_) nvs_->save_token(token);
-    ctx_.have_token = true;
-    pending_code_.clear();
-    apply_event(Event::PAIR_CONFIRMED);
-  } else {
-    pending_code_.clear();
-    apply_event(Event::PAIR_FAILED);
-  }
 }
 
 void perform_poll() {
@@ -185,7 +145,7 @@ void perform_poll() {
   if (now < next_poll_at_) return;
 
   Stats fresh;
-  std::string token = nvs_ ? nvs_->token() : "";
+  std::string token = nvs_ ? nvs_->bearer_token() : "";
   uint8_t mask = tileview_ ? tileview_->neighbor_mask() : 0;
   bool ok = stats_client_ && stats_client_->fetch(daemon_base_url_, token, mask, fresh);
   Serial.printf("poll url=%s mask=0x%02X ok=%d total=%d sess=%d%%\n",
@@ -211,6 +171,18 @@ void perform_poll() {
   }
 }
 
+bool try_connect_saved_wifi() {
+  if (!nvs_ || !nvs_->has_wifi_creds()) return false;
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(nvs_->wifi_ssid().c_str(), nvs_->wifi_psk().c_str());
+  uint32_t start = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+    if (millis() - start > 12000) return false;
+    delay(200);
+  }
+  return true;
+}
+
 } // namespace
 
 void app_init() {
@@ -224,15 +196,14 @@ void app_init() {
   nvs_->begin();
 
   ctx_.have_wifi_creds = nvs_->has_wifi_creds();
-  ctx_.have_token      = nvs_->has_token();
+  ctx_.have_token      = nvs_->has_server() && nvs_->has_bearer_token();
 
-  // Restore daemon URL from NVS so paired boots can poll immediately without
-  // re-running discovery. perform_discover() also reads this; we keep both
-  // paths populated.
-  std::string saved_host = nvs_->daemon_host();
-  if (!saved_host.empty()) {
-    daemon_base_url_ = "http://" + saved_host;
-    daemon_display_ = saved_host;
+  if (ctx_.have_token) {
+    char hp[96];
+    snprintf(hp, sizeof(hp), "%s:%u",
+             nvs_->server_host().c_str(), nvs_->server_port());
+    daemon_base_url_ = std::string("http://") + hp;
+    daemon_display_ = hp;
   }
 
   root_ = lv_screen_active();
@@ -249,14 +220,11 @@ void app_init() {
   lv_obj_set_style_radius(pre_pairing_layer_, 0, 0);
   lv_obj_set_style_pad_all(pre_pairing_layer_, 0, 0);
   lv_obj_clear_flag(pre_pairing_layer_, LV_OBJ_FLAG_SCROLLABLE);
-  // Children: 0=prov, 1=disc, 2=pair (referenced by index in render_state).
+  // Children: 0=prov, 1=disc (referenced by index in render_state).
   prov_ = new ProvisionScreen();
   disc_ = new DiscoverScreen();
-  pair_ = new PairScreen();
   prov_->build(lv_obj_create(pre_pairing_layer_));
   disc_->build(lv_obj_create(pre_pairing_layer_));
-  pair_->build(lv_obj_create(pre_pairing_layer_));
-  pair_->on_confirm(&on_pair_confirm);
 
   main_layer_ = lv_obj_create(root_);
   lv_obj_set_size(main_layer_, 240, 320 - kStatusBarHeight - kFooterHeight);
@@ -283,19 +251,19 @@ void app_init() {
   scr_routines_->build(tileview_->tile(SCR_ROUTINES));
   scr_budgets_->build(tileview_->tile(SCR_BUDGETS));
 
-  wifi_ = new WifiOnboarding();
   mdns_ = new MdnsDiscover();
-  pairing_ = new PairingClient();
   stats_client_ = new StatsClient();
 
-  // Initial transition from BOOT.
+  // Initial transition from BOOT — uses ctx_ filled above.
   apply_event(Event::TICK);
 
-  // Auto-reconnect with saved credentials.
-  if (current_state == State::DISCOVER || current_state == State::POLL_RENDER) {
-    if (!wifi_->try_saved(nvs_->wifi_ssid(), nvs_->wifi_psk())) {
-      // Fall back to PROVISION if creds no longer valid.
+  // If we believe we have full credentials, try to connect now. On failure,
+  // fall back to PROVISION (USB) and let the user re-run setup.
+  if (current_state == State::POLL_RENDER) {
+    if (!try_connect_saved_wifi()) {
       current_state = State::PROVISION;
+      ctx_.have_wifi_creds = false;
+      ctx_.have_token = false;
       render_state(current_state);
     }
   }
@@ -309,14 +277,12 @@ void app_tick() {
     Serial.println("factory reset triggered");
     nvs_->factory_reset();
     ctx_ = Context{};
-    pending_code_.clear();
     apply_event(Event::FACTORY_RESET);
   }
   switch (current_state) {
-    case State::PROVISION:  perform_provision(); break;
-    case State::DISCOVER:   perform_discover();  break;
-    case State::PAIR:       perform_pair();      break;
-    case State::POLL_RENDER:perform_poll();      break;
+    case State::PROVISION:  perform_provision_usb(); break;
+    case State::DISCOVER:   perform_discover();      break;
+    case State::POLL_RENDER:perform_poll();          break;
     default: break;
   }
 }
