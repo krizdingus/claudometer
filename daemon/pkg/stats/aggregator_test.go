@@ -29,6 +29,7 @@ func TestAggregate_BuildsSessionFromActiveBlock(t *testing.T) {
 	agg := &Aggregator{
 		Records:   records,
 		PlanInfo:  claudedata.PlanInfo{Plan: claudedata.PlanMax5x},
+		Caps:      claudedata.PlanCaps(claudedata.PlanMax5x),
 		Routines:  &fakeRoutines{},
 		Now:       func() time.Time { return now },
 	}
@@ -52,6 +53,7 @@ func TestAggregate_NoRecordsReturnsEmptySession(t *testing.T) {
 	agg := &Aggregator{
 		Records:  nil,
 		PlanInfo: claudedata.PlanInfo{Plan: claudedata.PlanFree},
+		Caps:     claudedata.PlanCaps(claudedata.PlanFree),
 		Routines: &fakeRoutines{},
 		Now:      func() time.Time { return now },
 	}
@@ -78,6 +80,7 @@ func TestAggregate_PopulatesRoutines(t *testing.T) {
 	agg := &Aggregator{
 		Records:  nil,
 		PlanInfo: claudedata.PlanInfo{Plan: claudedata.PlanPro},
+		Caps:     claudedata.PlanCaps(claudedata.PlanPro),
 		Routines: rs,
 		Now:      func() time.Time { return now },
 	}

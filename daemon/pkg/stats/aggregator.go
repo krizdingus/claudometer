@@ -21,6 +21,7 @@ type Aggregator struct {
 	Records    []claudedata.Record
 	GetRecords func() []claudedata.Record
 	PlanInfo   claudedata.PlanInfo
+	Caps       claudedata.Caps
 	Routines   routinesSource
 	Now        func() time.Time
 }
@@ -34,7 +35,7 @@ func (a *Aggregator) records() []claudedata.Record {
 
 func (a *Aggregator) Build(ctx context.Context) (Stats, error) {
 	now := a.Now()
-	caps := claudedata.PlanCaps(a.PlanInfo.Plan)
+	caps := a.Caps
 	recs := a.records()
 	blocks := claudedata.ComputeBlocks(recs, 5*time.Hour)
 	active := claudedata.ActiveBlock(blocks, now)
