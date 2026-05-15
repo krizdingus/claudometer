@@ -2,6 +2,7 @@
 
 #include "app/app_config.h"
 #include "app/brightness_controller.h"
+#include "hw/light_sensor.h"
 
 void test_curve_at_dark_endpoint_returns_floor(void) {
   TEST_ASSERT_EQUAL_UINT8(cyd::kDutyFloor, cyd::curve(cyd::kAdcDark));
@@ -45,6 +46,24 @@ void test_ramp_step_lands_exactly_on_boundary(void) {
   TEST_ASSERT_EQUAL_UINT8(108, cyd::ramp_step(100, 108, 8));  // delta == max → snap
 }
 
+void test_ema_step_converges_toward_target(void) {
+  // Integer IIR saturates near target due to truncation; allow ±10 LSB.
+  uint16_t smoothed = 0;
+  for (int i = 0; i < 50; i++) {
+    smoothed = cyd::ema_step(smoothed, 1000);
+  }
+  TEST_ASSERT_INT_WITHIN(10, 1000, smoothed);
+}
+
+void test_ema_step_no_change_at_target(void) {
+  TEST_ASSERT_EQUAL_UINT16(500, cyd::ema_step(500, 500));
+}
+
+void test_ema_step_moves_toward_lower_value(void) {
+  // From 800 toward 0: (800*7 + 0)/8 = 700.
+  TEST_ASSERT_EQUAL_UINT16(700, cyd::ema_step(800, 0));
+}
+
 int main(int, char **) {
   UNITY_BEGIN();
   RUN_TEST(test_curve_at_dark_endpoint_returns_floor);
@@ -56,5 +75,8 @@ int main(int, char **) {
   RUN_TEST(test_ramp_step_lands_on_target_when_within_step);
   RUN_TEST(test_ramp_step_moves_by_max_when_far);
   RUN_TEST(test_ramp_step_lands_exactly_on_boundary);
+  RUN_TEST(test_ema_step_converges_toward_target);
+  RUN_TEST(test_ema_step_no_change_at_target);
+  RUN_TEST(test_ema_step_moves_toward_lower_value);
   return UNITY_END();
 }
