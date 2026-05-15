@@ -92,3 +92,47 @@ func TestAggregate_PopulatesRoutines(t *testing.T) {
 		t.Errorf("Status = %q, want ok", got.Routines[0].Status)
 	}
 }
+
+func TestAggregate_RoutineNextRunInMinutes(t *testing.T) {
+	now := atTime("2026-05-13T13:00:00Z")
+	nextRun := atTime("2026-05-13T13:17:00Z") // 17 minutes from now
+	rs := &fakeRoutines{
+		list: []routines.Routine{
+			{Name: "babysit-prs", LastStatus: "ok", NextRun: &nextRun},
+		},
+	}
+	agg := &Aggregator{
+		Records:  nil,
+		PlanInfo: claudedata.PlanInfo{Plan: claudedata.PlanPro},
+		Caps:     claudedata.PlanCaps(claudedata.PlanPro),
+		Routines: rs,
+		Now:      func() time.Time { return now },
+	}
+	got, _ := agg.Build(context.Background())
+	if len(got.Routines) != 1 {
+		t.Fatalf("got %d routines, want 1", len(got.Routines))
+	}
+	if got.Routines[0].NextRunInMinutes != 17 {
+		t.Errorf("NextRunInMinutes = %d, want 17", got.Routines[0].NextRunInMinutes)
+	}
+}
+
+func TestAggregate_RoutineNoNextRun(t *testing.T) {
+	now := atTime("2026-05-13T13:00:00Z")
+	rs := &fakeRoutines{
+		list: []routines.Routine{
+			{Name: "babysit-prs", LastStatus: "ok"},
+		},
+	}
+	agg := &Aggregator{
+		Records:  nil,
+		PlanInfo: claudedata.PlanInfo{Plan: claudedata.PlanPro},
+		Caps:     claudedata.PlanCaps(claudedata.PlanPro),
+		Routines: rs,
+		Now:      func() time.Time { return now },
+	}
+	got, _ := agg.Build(context.Background())
+	if got.Routines[0].NextRunInMinutes != -1 {
+		t.Errorf("NextRunInMinutes = %d, want -1 (unset sentinel)", got.Routines[0].NextRunInMinutes)
+	}
+}
