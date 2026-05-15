@@ -22,7 +22,7 @@ void ScreenRoutines::build(lv_obj_t *parent) {
   lv_obj_set_style_text_color(next_label_, theme::fg(), 0);
   lv_obj_set_style_text_font(next_label_, &lv_font_montserrat_24, 0);
   lv_obj_align(next_label_, LV_ALIGN_TOP_LEFT, 4, 24);
-  lv_label_set_text(next_label_, "NEXT —");
+  lv_label_set_text(next_label_, "NEXT -");
 
   next_name_ = lv_label_create(parent);
   lv_obj_set_style_text_color(next_name_, theme::fg_muted(), 0);
@@ -110,7 +110,7 @@ void ScreenRoutines::update(const Stats &s) {
       lv_label_set_text(next_label_, buf);
       lv_label_set_text(next_name_, s.routines[best_idx].name.c_str());
     } else {
-      lv_label_set_text(next_label_, "NEXT  —");
+      lv_label_set_text(next_label_, "NEXT  -");
       lv_label_set_text(next_name_, "no upcoming");
     }
   }
@@ -135,7 +135,7 @@ void ScreenRoutines::update(const Stats &s) {
     lv_label_set_text(pill_label, r.status.c_str());
 
     char w[40];
-    snprintf(w, sizeof(w), "last %s · next %s",
+    snprintf(w, sizeof(w), "last %s - next %s",
              r.last_run.c_str(), r.next_run.c_str());
     lv_label_set_text(rows_[i].when, w);
   }
