@@ -87,7 +87,7 @@ void ScreenHome::build(lv_obj_t *parent) {
   lv_obj_set_style_text_color(week_meta_, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(week_meta_, &lv_font_montserrat_12, 0);
   lv_obj_align(week_meta_, LV_ALIGN_TOP_LEFT, 4, 166);
-  lv_label_set_text(week_meta_, "—");
+  lv_label_set_text(week_meta_, "-");
 
   hairline(parent, 188);
 
@@ -102,7 +102,7 @@ void ScreenHome::build(lv_obj_t *parent) {
   lv_obj_set_style_text_color(today_line_, theme::fg(), 0);
   lv_obj_set_style_text_font(today_line_, &lv_font_montserrat_14, 0);
   lv_obj_align(today_line_, LV_ALIGN_TOP_RIGHT, -4, 198);
-  lv_label_set_text(today_line_, "0k · $0.00");
+  lv_label_set_text(today_line_, "0k - $0.00");
 }
 
 void ScreenHome::update(const Stats &s) {
@@ -117,10 +117,10 @@ void ScreenHome::update(const Stats &s) {
   if (!s.session.resets_at.empty()) {
     int m = s.session.minutes_remaining;
     if (m >= 60) {
-      snprintf(buf, sizeof(buf), "resets %s  ·  %dh %dm left",
+      snprintf(buf, sizeof(buf), "resets %s - %dh %dm left",
                s.session.resets_at.c_str(), m / 60, m % 60);
     } else {
-      snprintf(buf, sizeof(buf), "resets %s  ·  %dm left",
+      snprintf(buf, sizeof(buf), "resets %s - %dm left",
                s.session.resets_at.c_str(), m);
     }
     lv_label_set_text(session_meta_, buf);
@@ -137,15 +137,15 @@ void ScreenHome::update(const Stats &s) {
     snprintf(buf, sizeof(buf), "resets in %s", s.budgets.resets_in.c_str());
     lv_label_set_text(week_meta_, buf);
   } else {
-    lv_label_set_text(week_meta_, "—");
+    lv_label_set_text(week_meta_, "-");
   }
 
   int t = s.models_today.total_tokens;
   if (t >= 1000000) {
-    snprintf(buf, sizeof(buf), "%.1fM · $%.2f",
+    snprintf(buf, sizeof(buf), "%.1fM - $%.2f",
              t / 1000000.0, s.models_today.est_cost_usd);
   } else {
-    snprintf(buf, sizeof(buf), "%dk · $%.2f",
+    snprintf(buf, sizeof(buf), "%dk - $%.2f",
              t / 1000, s.models_today.est_cost_usd);
   }
   lv_label_set_text(today_line_, buf);

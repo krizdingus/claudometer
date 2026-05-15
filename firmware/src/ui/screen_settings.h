@@ -20,9 +20,9 @@ class ScreenSettings {
   void update(const Stats &s);              // mostly for health-derived rows
   void set_device_info(const char *hostname, const char *ip, const char *version);
 
-  // Called by app_loop when a tap is detected on this tile.
-  // Returns true if handled (theme toggle hit). Coordinates are screen-relative.
-  bool on_tap(int x, int y);
+  // Persists the chosen theme and reboots so every screen renders in the new
+  // palette. mode: 0 = dark, 1 = light.
+  void apply_mode_and_restart(int mode);
 
  private:
   Nvs *nvs_ = nullptr;

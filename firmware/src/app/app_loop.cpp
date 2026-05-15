@@ -196,26 +196,6 @@ bool try_connect_saved_wifi() {
   return true;
 }
 
-static void on_screen_click(lv_event_t *e) {
-  if (lv_event_get_code(e) != LV_EVENT_RELEASED) return;
-  if (!tileview_ || tileview_->active() != SCR_SETTINGS) return;
-  if (!scr_settings_) return;
-
-  lv_indev_t *indev = lv_indev_get_act();
-  if (!indev) return;
-  lv_point_t p;
-  lv_indev_get_point(indev, &p);
-
-  // Translate global screen coords to tile-local. The Settings tile starts
-  // at y = kStatusBarHeight; x is 0-based in the tileview content area.
-  int tile_x = p.x;
-  int tile_y = p.y - kStatusBarHeight;
-
-  if (tile_y < 0) return;  // tap was in chrome, ignore
-
-  scr_settings_->on_tap(tile_x, tile_y);
-}
-
 } // namespace
 
 void app_init() {
@@ -297,7 +277,6 @@ void app_init() {
 #endif
   }
 
-  lv_obj_add_event_cb(root_, on_screen_click, LV_EVENT_RELEASED, nullptr);
 
   mdns_ = new MdnsDiscover();
   stats_client_ = new StatsClient();

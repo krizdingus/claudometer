@@ -2,6 +2,7 @@
 
 #ifndef UNIT_TEST
 
+#include <Arduino.h>
 #include <stdio.h>
 
 #include "hw/nvs.h"
@@ -32,6 +33,7 @@ lv_obj_t *make_pill(lv_obj_t *parent, const char *text, int x, int y) {
   lv_obj_set_style_bg_opa(pill, LV_OPA_TRANSP, 0);
   lv_obj_set_style_pad_all(pill, 0, 0);
   lv_obj_clear_flag(pill, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_add_flag(pill, LV_OBJ_FLAG_CLICKABLE);
 
   auto *label = lv_label_create(pill);
   lv_label_set_text(label, text);
@@ -39,8 +41,20 @@ lv_obj_t *make_pill(lv_obj_t *parent, const char *text, int x, int y) {
   lv_obj_set_style_text_font(label, &lv_font_montserrat_14, 0);
   lv_obj_center(label);
   lv_obj_set_user_data(pill, label);
+  // Don't let the label intercept clicks — let them bubble to the pill.
+  lv_obj_clear_flag(label, LV_OBJ_FLAG_CLICKABLE);
 
   return pill;
+}
+
+static void on_dark_clicked(lv_event_t *e) {
+  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
+  if (self) self->apply_mode_and_restart(0);
+}
+
+static void on_light_clicked(lv_event_t *e) {
+  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
+  if (self) self->apply_mode_and_restart(1);
 }
 
 }  // namespace
@@ -64,6 +78,8 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs) {
 
   dark_pill_  = make_pill(parent, "Dark",  8,   58);
   light_pill_ = make_pill(parent, "Light", 128, 58);
+  lv_obj_add_event_cb(dark_pill_,  on_dark_clicked,  LV_EVENT_CLICKED, this);
+  lv_obj_add_event_cb(light_pill_, on_light_clicked, LV_EVENT_CLICKED, this);
   apply_active_pill_styles();
 
   hairline(parent, 100);
@@ -78,13 +94,13 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs) {
   lv_obj_set_style_text_color(hostname_label_, theme::fg(), 0);
   lv_obj_set_style_text_font(hostname_label_, &lv_font_montserrat_14, 0);
   lv_obj_align(hostname_label_, LV_ALIGN_TOP_LEFT, 4, 128);
-  lv_label_set_text(hostname_label_, "—");
+  lv_label_set_text(hostname_label_, "-");
 
   ip_label_ = lv_label_create(parent);
   lv_obj_set_style_text_color(ip_label_, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(ip_label_, &lv_font_montserrat_12, 0);
   lv_obj_align(ip_label_, LV_ALIGN_TOP_LEFT, 4, 148);
-  lv_label_set_text(ip_label_, "—");
+  lv_label_set_text(ip_label_, "-");
 
   version_label_ = lv_label_create(parent);
   lv_obj_set_style_text_color(version_label_, theme::fg_muted(), 0);
@@ -102,7 +118,7 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs) {
   lv_obj_set_style_text_color(daemon_label_, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(daemon_label_, &lv_font_montserrat_12, 0);
   lv_obj_align(daemon_label_, LV_ALIGN_TOP_LEFT, 4, 188);
-  lv_label_set_text(daemon_label_, "daemon —");
+  lv_label_set_text(daemon_label_, "daemon -");
 }
 
 void ScreenSettings::apply_active_pill_styles() {
@@ -143,37 +159,19 @@ void ScreenSettings::set_device_info(const char *hostname, const char *ip, const
 
 void ScreenSettings::update(const Stats &s) {
   if (s.stale) {
-    lv_label_set_text(daemon_label_, "daemon — stale");
+    lv_label_set_text(daemon_label_, "daemon - stale");
     lv_obj_set_style_text_color(daemon_label_, theme::warn(), 0);
   } else {
-    lv_label_set_text(daemon_label_, "daemon — ok");
+    lv_label_set_text(daemon_label_, "daemon - ok");
     lv_obj_set_style_text_color(daemon_label_, theme::ok(), 0);
   }
 }
 
-bool ScreenSettings::on_tap(int x, int y) {
-  auto hit = [&](lv_obj_t *o) {
-    if (!o) return false;
-    int ox = lv_obj_get_x(o);
-    int oy = lv_obj_get_y(o);
-    int ow = lv_obj_get_width(o);
-    int oh = lv_obj_get_height(o);
-    return x >= ox && x < ox + ow && y >= oy && y < oy + oh;
-  };
-
-  if (hit(dark_pill_)) {
-    theme::set_mode(theme::Mode::Dark);
-    if (nvs_) nvs_->save_theme(0);
-    apply_active_pill_styles();
-    return true;
-  }
-  if (hit(light_pill_)) {
-    theme::set_mode(theme::Mode::Light);
-    if (nvs_) nvs_->save_theme(1);
-    apply_active_pill_styles();
-    return true;
-  }
-  return false;
+void ScreenSettings::apply_mode_and_restart(int mode) {
+  if (nvs_) nvs_->save_theme(mode);
+  Serial.printf("theme: switching to %s, restarting\n", mode == 1 ? "light" : "dark");
+  delay(150);
+  ESP.restart();
 }
 
 }  // namespace cyd
