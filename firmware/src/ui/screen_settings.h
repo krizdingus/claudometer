@@ -5,7 +5,6 @@
 #ifndef UNIT_TEST
 
 #include <lvgl.h>
-#include <string>
 
 namespace cyd {
 
