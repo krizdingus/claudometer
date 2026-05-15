@@ -75,24 +75,41 @@ static void on_light_clicked(lv_event_t *e) {
   if (self) self->apply_mode_and_restart(1);
 }
 
-static void on_low_clicked(lv_event_t *e) {
-  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
-  if (self) self->apply_brightness(kBrightnessLow);
+int duty_to_idx(uint8_t duty) {
+  if (duty <= kBrightnessLow) return 0;
+  if (duty <= kBrightnessMed) return 1;
+  if (duty <= kBrightnessHigh) return 2;
+  return 3;
 }
 
-static void on_med_clicked(lv_event_t *e) {
-  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
-  if (self) self->apply_brightness(kBrightnessMed);
+uint8_t idx_to_duty(int idx) {
+  switch (idx) {
+    case 0:  return kBrightnessLow;
+    case 1:  return kBrightnessMed;
+    case 2:  return kBrightnessHigh;
+    case 3:  return kBrightnessMax;
+    default: return kBrightnessDefault;
+  }
 }
 
-static void on_high_clicked(lv_event_t *e) {
-  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
-  if (self) self->apply_brightness(kBrightnessHigh);
+const char *idx_to_name(int idx) {
+  switch (idx) {
+    case 0:  return "Low";
+    case 1:  return "Med";
+    case 2:  return "High";
+    case 3:  return "Max";
+    default: return "?";
+  }
 }
 
-static void on_max_clicked(lv_event_t *e) {
+static void on_minus_clicked(lv_event_t *e) {
   auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
-  if (self) self->apply_brightness(kBrightnessMax);
+  if (self) self->step_brightness(-1);
+}
+
+static void on_plus_clicked(lv_event_t *e) {
+  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
+  if (self) self->step_brightness(+1);
 }
 
 }  // namespace
@@ -117,7 +134,7 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs, BrightnessController *bri
   lv_obj_align(theme_label, LV_ALIGN_TOP_LEFT, 4, 36);
 
   dark_pill_  = make_pill(parent, "Dark",  8,   58);
-  light_pill_ = make_pill(parent, "Light", 128, 58);
+  light_pill_ = make_pill(parent, "Light", 120, 58);
   lv_obj_add_event_cb(dark_pill_,  on_dark_clicked,  LV_EVENT_CLICKED, this);
   lv_obj_add_event_cb(light_pill_, on_light_clicked, LV_EVENT_CLICKED, this);
 
@@ -130,14 +147,18 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs, BrightnessController *bri
   lv_obj_set_style_text_font(bright_label, &lv_font_montserrat_12, 0);
   lv_obj_align(bright_label, LV_ALIGN_TOP_LEFT, 4, 102);
 
-  low_pill_  = make_pill(parent, "Low",  8,   124, 52);
-  med_pill_  = make_pill(parent, "Med",  68,  124, 52);
-  high_pill_ = make_pill(parent, "High", 128, 124, 52);
-  max_pill_  = make_pill(parent, "Max",  188, 124, 52);
-  lv_obj_add_event_cb(low_pill_,  on_low_clicked,  LV_EVENT_CLICKED, this);
-  lv_obj_add_event_cb(med_pill_,  on_med_clicked,  LV_EVENT_CLICKED, this);
-  lv_obj_add_event_cb(high_pill_, on_high_clicked, LV_EVENT_CLICKED, this);
-  lv_obj_add_event_cb(max_pill_,  on_max_clicked,  LV_EVENT_CLICKED, this);
+  minus_pill_ = make_pill(parent, "-", 8,   124, 48);
+  plus_pill_  = make_pill(parent, "+", 168, 124, 48);
+  lv_obj_add_event_cb(minus_pill_, on_minus_clicked, LV_EVENT_CLICKED, this);
+  lv_obj_add_event_cb(plus_pill_,  on_plus_clicked,  LV_EVENT_CLICKED, this);
+
+  level_label_ = lv_label_create(parent);
+  lv_label_set_text(level_label_, "High");
+  lv_obj_set_style_text_color(level_label_, theme::fg(), 0);
+  lv_obj_set_style_text_font(level_label_, &lv_font_montserrat_14, 0);
+  lv_obj_set_style_text_align(level_label_, LV_TEXT_ALIGN_CENTER, 0);
+  lv_obj_set_pos(level_label_, 56, 124 + 5);
+  lv_obj_set_size(level_label_, 112, 18);
 
   apply_active_pill_styles();
 
@@ -186,27 +207,18 @@ void ScreenSettings::apply_active_pill_styles() {
   if (is_dark) apply_pill_pair_styles(dark_pill_, light_pill_);
   else         apply_pill_pair_styles(light_pill_, dark_pill_);
 
-  if (low_pill_ && med_pill_ && high_pill_ && max_pill_ && brightness_) {
-    uint8_t duty = brightness_->level();
-    // Style each pill: active if it matches the current duty, inactive otherwise.
-    lv_obj_t *pills[4] = {low_pill_, med_pill_, high_pill_, max_pill_};
-    uint8_t duties[4]  = {kBrightnessLow, kBrightnessMed, kBrightnessHigh, kBrightnessMax};
-    for (int i = 0; i < 4; i++) {
-      if (duties[i] == duty) {
-        // active style
-        lv_obj_set_style_bg_color(pills[i], theme::accent(), 0);
-        lv_obj_set_style_bg_opa(pills[i], LV_OPA_COVER, 0);
-        lv_obj_set_style_border_color(pills[i], theme::accent(), 0);
-        auto *label = static_cast<lv_obj_t *>(lv_obj_get_user_data(pills[i]));
-        lv_obj_set_style_text_color(label, theme::bg(), 0);
-      } else {
-        // inactive style
-        lv_obj_set_style_bg_opa(pills[i], LV_OPA_TRANSP, 0);
-        lv_obj_set_style_border_color(pills[i], theme::fg_muted(), 0);
-        auto *label = static_cast<lv_obj_t *>(lv_obj_get_user_data(pills[i]));
-        lv_obj_set_style_text_color(label, theme::fg(), 0);
-      }
-    }
+  if (minus_pill_ && plus_pill_ && level_label_ && brightness_) {
+    int idx = duty_to_idx(brightness_->level());
+    lv_label_set_text(level_label_, idx_to_name(idx));
+    // +/- pills always render as inactive-styled (always tappable, never "selected").
+    auto inactive = [](lv_obj_t *pill) {
+      lv_obj_set_style_bg_opa(pill, LV_OPA_TRANSP, 0);
+      lv_obj_set_style_border_color(pill, theme::fg_muted(), 0);
+      auto *label = static_cast<lv_obj_t *>(lv_obj_get_user_data(pill));
+      lv_obj_set_style_text_color(label, theme::fg(), 0);
+    };
+    inactive(minus_pill_);
+    inactive(plus_pill_);
   }
 }
 
@@ -237,9 +249,13 @@ void ScreenSettings::apply_mode_and_restart(int mode) {
   ESP.restart();
 }
 
-void ScreenSettings::apply_brightness(uint8_t duty) {
-  if (brightness_) brightness_->set_level(duty);
-  apply_active_pill_styles();  // re-style without restart
+void ScreenSettings::step_brightness(int direction) {
+  if (!brightness_) return;
+  int idx = duty_to_idx(brightness_->level()) + direction;
+  if (idx < 0) idx = 0;
+  if (idx > 3) idx = 3;
+  brightness_->set_level(idx_to_duty(idx));
+  apply_active_pill_styles();  // updates level label + restyles pills
 }
 
 }  // namespace cyd

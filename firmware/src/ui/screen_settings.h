@@ -26,18 +26,17 @@ class ScreenSettings {
   // palette. mode: 0 = dark, 1 = light.
   void apply_mode_and_restart(int mode);
 
-  // Applies & persists a brightness level. Live, no restart.
-  void apply_brightness(uint8_t duty);
+  // Steps brightness one level up (+1) or down (-1) and persists. Live, no restart.
+  void step_brightness(int direction);
 
  private:
   Nvs *nvs_ = nullptr;
   BrightnessController *brightness_ = nullptr;
   lv_obj_t *dark_pill_ = nullptr;
   lv_obj_t *light_pill_ = nullptr;
-  lv_obj_t *low_pill_ = nullptr;
-  lv_obj_t *med_pill_ = nullptr;
-  lv_obj_t *high_pill_ = nullptr;
-  lv_obj_t *max_pill_ = nullptr;
+  lv_obj_t *minus_pill_ = nullptr;
+  lv_obj_t *plus_pill_ = nullptr;
+  lv_obj_t *level_label_ = nullptr;
   lv_obj_t *hostname_label_ = nullptr;
   lv_obj_t *ip_label_ = nullptr;
   lv_obj_t *version_label_ = nullptr;
