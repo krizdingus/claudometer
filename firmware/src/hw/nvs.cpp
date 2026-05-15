@@ -56,6 +56,10 @@ bool Nvs::has_brightness() const { return prefs.isKey("brightness"); }
 uint8_t Nvs::brightness() const { return (uint8_t)prefs.getUChar("brightness", kBrightnessDefault); }
 void Nvs::save_brightness(uint8_t duty) { prefs.putUChar("brightness", duty); }
 
+bool Nvs::has_carousel() const { return prefs.isKey("carousel"); }
+bool Nvs::carousel() const { return prefs.getBool("carousel", false); }
+void Nvs::save_carousel(bool on) { prefs.putBool("carousel", on); }
+
 void Nvs::factory_reset() {
   prefs.clear();
 }
