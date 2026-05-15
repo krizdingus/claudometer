@@ -28,6 +28,7 @@ enum Screen : uint8_t {
   SCR_MODELS,
   SCR_ROUTINES,
   SCR_SETTINGS,
+  SCR_DEVICE,
   SCR_COUNT,
 };
 
@@ -40,5 +41,9 @@ constexpr uint8_t kBrightnessMed  = 128;  // ~50%
 constexpr uint8_t kBrightnessHigh = 200;  // ~78% — matches pre-feature default
 constexpr uint8_t kBrightnessMax  = 255;  // 100%
 constexpr uint8_t kBrightnessDefault = kBrightnessHigh;
+
+// Carousel auto-rotation timing.
+constexpr uint32_t kCarouselIntervalMs = 10000;  // advance every 10 s
+constexpr uint32_t kCarouselResumeMs   = 30000;  // resume 30 s after last touch
 
 } // namespace cyd
