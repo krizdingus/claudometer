@@ -50,6 +50,10 @@ bool Nvs::has_theme() const { return prefs.isKey("theme"); }
 int Nvs::theme_mode() const { return prefs.getInt("theme", 0); }
 void Nvs::save_theme(int mode) { prefs.putInt("theme", mode); }
 
+bool Nvs::has_auto_bright() const { return prefs.isKey("auto_bright"); }
+bool Nvs::auto_bright() const { return prefs.getBool("auto_bright", true); }
+void Nvs::save_auto_bright(bool on) { prefs.putBool("auto_bright", on); }
+
 void Nvs::factory_reset() {
   prefs.clear();
 }

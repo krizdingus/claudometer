@@ -38,6 +38,11 @@ class Nvs {
   int theme_mode() const;       // returns 0 if unset
   void save_theme(int mode);
 
+  // Auto-brightness mode: true = sensor-driven, false = fixed default.
+  bool has_auto_bright() const;
+  bool auto_bright() const;          // returns true if unset (Auto on by default)
+  void save_auto_bright(bool on);
+
   // Wipe all keys, return to factory state.
   void factory_reset();
 };
