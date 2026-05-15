@@ -47,6 +47,21 @@ lv_obj_t *make_pill(lv_obj_t *parent, const char *text, int x, int y) {
   return pill;
 }
 
+void apply_pill_pair_styles(lv_obj_t *active, lv_obj_t *inactive) {
+  // Active pill: filled with accent.
+  lv_obj_set_style_bg_color(active, theme::accent(), 0);
+  lv_obj_set_style_bg_opa(active, LV_OPA_COVER, 0);
+  lv_obj_set_style_border_color(active, theme::accent(), 0);
+  auto *active_label = static_cast<lv_obj_t *>(lv_obj_get_user_data(active));
+  lv_obj_set_style_text_color(active_label, theme::bg(), 0);
+
+  // Inactive pill: transparent with muted border.
+  lv_obj_set_style_bg_opa(inactive, LV_OPA_TRANSP, 0);
+  lv_obj_set_style_border_color(inactive, theme::fg_muted(), 0);
+  auto *inactive_label = static_cast<lv_obj_t *>(lv_obj_get_user_data(inactive));
+  lv_obj_set_style_text_color(inactive_label, theme::fg(), 0);
+}
+
 static void on_dark_clicked(lv_event_t *e) {
   auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
   if (self) self->apply_mode_and_restart(0);
@@ -123,28 +138,8 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs) {
 
 void ScreenSettings::apply_active_pill_styles() {
   bool is_dark = theme::get_mode() == theme::Mode::Dark;
-
-  auto active_styling = [](lv_obj_t *pill) {
-    lv_obj_set_style_bg_color(pill, theme::accent(), 0);
-    lv_obj_set_style_bg_opa(pill, LV_OPA_COVER, 0);
-    lv_obj_set_style_border_color(pill, theme::accent(), 0);
-    auto *label = static_cast<lv_obj_t *>(lv_obj_get_user_data(pill));
-    lv_obj_set_style_text_color(label, theme::bg(), 0);
-  };
-  auto inactive_styling = [](lv_obj_t *pill) {
-    lv_obj_set_style_bg_opa(pill, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_border_color(pill, theme::fg_muted(), 0);
-    auto *label = static_cast<lv_obj_t *>(lv_obj_get_user_data(pill));
-    lv_obj_set_style_text_color(label, theme::fg(), 0);
-  };
-
-  if (is_dark) {
-    active_styling(dark_pill_);
-    inactive_styling(light_pill_);
-  } else {
-    active_styling(light_pill_);
-    inactive_styling(dark_pill_);
-  }
+  if (is_dark) apply_pill_pair_styles(dark_pill_, light_pill_);
+  else         apply_pill_pair_styles(light_pill_, dark_pill_);
 }
 
 void ScreenSettings::set_device_info(const char *hostname, const char *ip, const char *version) {
