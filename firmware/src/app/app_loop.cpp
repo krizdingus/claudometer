@@ -56,6 +56,14 @@ lv_obj_t *root_ = nullptr;
 lv_obj_t *pre_pairing_layer_ = nullptr;   // hosts prov + disc
 lv_obj_t *main_layer_ = nullptr;          // hosts tileview + chrome
 
+static const char *pretty_plan_str(const std::string &raw) {
+  if (raw == "max-20x") return "MAX 20x";
+  if (raw == "max-5x")  return "MAX 5x";
+  if (raw == "pro")     return "PRO";
+  if (raw == "free")    return "FREE";
+  return raw.c_str();
+}
+
 void show_layer(lv_obj_t *layer) {
   lv_obj_add_flag(pre_pairing_layer_, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(main_layer_, LV_OBJ_FLAG_HIDDEN);
@@ -101,6 +109,7 @@ void update_all_screens(const Stats &s) {
   if (chrome_) {
     chrome_->set_health(s.stale ? 1 : 0);
     if (!s.local_time.empty()) chrome_->set_clock(s.local_time.c_str());
+    chrome_->set_plan(pretty_plan_str(s.budgets.plan));
   }
 }
 
