@@ -43,6 +43,11 @@ class Nvs {
   uint8_t brightness() const;
   void save_brightness(uint8_t duty);
 
+  // Carousel auto-rotation: true = cycle screens, false = static.
+  bool has_carousel() const;
+  bool carousel() const;             // returns false if unset (off by default)
+  void save_carousel(bool on);
+
   // Wipe all keys, return to factory state.
   void factory_reset();
 };

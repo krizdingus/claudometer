@@ -14,7 +14,10 @@
 #define LV_TICK_CUSTOM_INCLUDE "Arduino.h"
 #define LV_TICK_CUSTOM_SYS_TIME_EXPR (millis())
 
-#define LV_MEM_SIZE (40U * 1024U)
+// Use libc malloc (ESP32 heap) instead of LVGL's static pool — gives LVGL
+// access to the full ~200KB system heap instead of a fixed DRAM-reserved chunk.
+#define LV_USE_STDLIB_MALLOC LV_STDLIB_CLIB
+#define LV_MEM_SIZE (40U * 1024U)  // ignored when LV_USE_STDLIB_MALLOC != BUILTIN
 
 #define LV_USE_PERF_MONITOR 0
 #define LV_USE_MEM_MONITOR  0
