@@ -230,6 +230,7 @@ void app_init() {
   light_sensor_ = new LightSensor();
   light_sensor_->begin();
   brightness_ = new BrightnessController();
+  // display().init() must have run first — begin() writes via setBrightness().
   brightness_->begin(light_sensor_, nvs_);
 
   root_ = lv_screen_active();
