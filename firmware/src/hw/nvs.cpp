@@ -46,6 +46,10 @@ void Nvs::save_touch_cal(const uint16_t cal[8]) {
   prefs.putBytes("touch_cal", cal, sizeof(uint16_t) * 8);
 }
 
+bool Nvs::has_theme() const { return prefs.isKey("theme"); }
+int Nvs::theme_mode() const { return prefs.getInt("theme", 0); }
+void Nvs::save_theme(int mode) { prefs.putInt("theme", mode); }
+
 void Nvs::factory_reset() {
   prefs.clear();
 }
