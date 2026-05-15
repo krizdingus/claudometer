@@ -134,7 +134,7 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs, BrightnessController *bri
   lv_obj_align(theme_label, LV_ALIGN_TOP_LEFT, 4, 36);
 
   dark_pill_  = make_pill(parent, "Dark",  8,   58);
-  light_pill_ = make_pill(parent, "Light", 120, 58);
+  light_pill_ = make_pill(parent, "Light", 128, 58);
   lv_obj_add_event_cb(dark_pill_,  on_dark_clicked,  LV_EVENT_CLICKED, this);
   lv_obj_add_event_cb(light_pill_, on_light_clicked, LV_EVENT_CLICKED, this);
 
@@ -148,7 +148,7 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs, BrightnessController *bri
   lv_obj_align(bright_label, LV_ALIGN_TOP_LEFT, 4, 102);
 
   minus_pill_ = make_pill(parent, "-", 8,   124, 48);
-  plus_pill_  = make_pill(parent, "+", 168, 124, 48);
+  plus_pill_  = make_pill(parent, "+", 176, 124, 48);
   lv_obj_add_event_cb(minus_pill_, on_minus_clicked, LV_EVENT_CLICKED, this);
   lv_obj_add_event_cb(plus_pill_,  on_plus_clicked,  LV_EVENT_CLICKED, this);
 
@@ -158,7 +158,7 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs, BrightnessController *bri
   lv_obj_set_style_text_font(level_label_, &lv_font_montserrat_14, 0);
   lv_obj_set_style_text_align(level_label_, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_set_pos(level_label_, 56, 124 + 5);
-  lv_obj_set_size(level_label_, 112, 18);
+  lv_obj_set_size(level_label_, 120, 18);
 
   apply_active_pill_styles();
 
