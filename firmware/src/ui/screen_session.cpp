@@ -59,7 +59,7 @@ void ScreenSession::build(lv_obj_t *parent) {
   lv_obj_set_style_text_font(model_b_, &lv_font_montserrat_14, 0);
   lv_obj_set_style_text_align(model_b_, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_set_width(model_b_, 224);
-  lv_obj_align(model_b_, LV_ALIGN_TOP_MID, 0, 232);
+  lv_obj_align(model_b_, LV_ALIGN_TOP_MID, 0, 214);
   lv_label_set_text(model_b_, "");
 }
 
