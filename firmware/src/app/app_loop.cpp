@@ -9,6 +9,7 @@
 
 #include "app/app_config.h"
 #include "app/brightness_controller.h"
+#include "app/carousel.h"
 #include "app/long_press.h"
 #include "app/plan_names.h"
 #include "app/state_machine.h"
@@ -23,6 +24,7 @@
 #include "ui/lvgl_glue.h"
 #include "ui/provision_screen.h"
 #include "ui/screen_budgets.h"
+#include "ui/screen_device.h"
 #include "ui/screen_home.h"
 #include "ui/screen_models.h"
 #include "ui/screen_routines.h"
@@ -39,6 +41,7 @@ State current_state = State::BOOT;
 Context ctx_;
 Nvs *nvs_ = nullptr;
 BrightnessController *brightness_ = nullptr;
+Carousel *carousel_ = nullptr;
 Chrome *chrome_ = nullptr;
 Tileview *tileview_ = nullptr;
 ScreenHome *scr_home_ = nullptr;
@@ -47,6 +50,7 @@ ScreenModels *scr_models_ = nullptr;
 ScreenRoutines *scr_routines_ = nullptr;
 ScreenBudgets *scr_budgets_ = nullptr;
 ScreenSettings *scr_settings_ = nullptr;
+ScreenDevice *scr_device_ = nullptr;
 ProvisionScreen *prov_ = nullptr;
 DiscoverScreen *disc_ = nullptr;
 MdnsDiscover *mdns_ = nullptr;
@@ -103,17 +107,11 @@ void update_all_screens(const Stats &s) {
   if (scr_models_) scr_models_->update(s);
   if (scr_routines_) scr_routines_->update(s);
   if (scr_budgets_) scr_budgets_->update(s);
-  if (scr_settings_) {
-    scr_settings_->update(s);
-    // Refresh device info from current WiFi state — at boot the IP is
-    // 0.0.0.0 since WiFi hasn't associated yet.
-    String ip_str = WiFi.localIP().toString();
-    String host_str = WiFi.getHostname();
-#ifdef FIRMWARE_VERSION
-    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), FIRMWARE_VERSION);
-#else
-    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), "?");
-#endif
+  if (scr_device_) {
+    scr_device_->update(s);
+    String ssid_str = WiFi.SSID();
+    int rssi = WiFi.RSSI();
+    scr_device_->set_wifi_info(ssid_str.c_str(), rssi);
   }
   if (chrome_) {
     chrome_->set_health(s.stale ? 1 : 0);
@@ -229,6 +227,9 @@ void app_init() {
   // display().init() must have run first — begin() writes via setBrightness().
   brightness_->begin(nvs_);
 
+  carousel_ = new Carousel();
+  // tileview_ is constructed below; defer carousel_->begin() until after.
+
   root_ = lv_screen_active();
   lv_obj_set_style_bg_color(root_, theme::bg(), 0);
 
@@ -272,17 +273,24 @@ void app_init() {
   scr_routines_->build(tileview_->tile(SCR_ROUTINES));
   scr_budgets_->build(tileview_->tile(SCR_BUDGETS));
   scr_settings_ = new ScreenSettings();
-  scr_settings_->build(tileview_->tile(SCR_SETTINGS), nvs_, brightness_);
+  scr_settings_->build(tileview_->tile(SCR_SETTINGS), nvs_, brightness_, carousel_);
+  scr_device_ = new ScreenDevice();
+  scr_device_->build(tileview_->tile(SCR_DEVICE));
+
+  carousel_->begin(nvs_, tileview_);
+
   {
     String ip_str = WiFi.localIP().toString();
     String host_str = WiFi.getHostname();
+    String ssid_str = WiFi.SSID();
+    int rssi = WiFi.RSSI();
 #ifdef FIRMWARE_VERSION
-    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), FIRMWARE_VERSION);
+    scr_device_->set_device_info(host_str.c_str(), ip_str.c_str(), FIRMWARE_VERSION);
 #else
-    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), "?");
+    scr_device_->set_device_info(host_str.c_str(), ip_str.c_str(), "?");
 #endif
+    scr_device_->set_wifi_info(ssid_str.c_str(), rssi);
   }
-
 
   mdns_ = new MdnsDiscover();
   stats_client_ = new StatsClient();
@@ -311,6 +319,9 @@ void app_tick() {
     nvs_->factory_reset();
     ctx_ = Context{};
     apply_event(Event::FACTORY_RESET);
+  }
+  if (current_state == State::POLL_RENDER && carousel_) {
+    carousel_->tick(millis(), ev.pressed);
   }
   switch (current_state) {
     case State::PROVISION:  perform_provision_usb(); break;

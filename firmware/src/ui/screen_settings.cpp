@@ -7,6 +7,7 @@
 
 #include "app/app_config.h"
 #include "app/brightness_controller.h"
+#include "app/carousel.h"
 #include "hw/nvs.h"
 #include "ui/theme.h"
 
@@ -112,11 +113,22 @@ static void on_plus_clicked(lv_event_t *e) {
   if (self) self->step_brightness(+1);
 }
 
+static void on_carousel_on_clicked(lv_event_t *e) {
+  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
+  if (self) self->apply_carousel(true);
+}
+
+static void on_carousel_off_clicked(lv_event_t *e) {
+  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
+  if (self) self->apply_carousel(false);
+}
+
 }  // namespace
 
-void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs, BrightnessController *brightness) {
+void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs, BrightnessController *brightness, Carousel *carousel) {
   nvs_ = nvs;
   brightness_ = brightness;
+  carousel_ = carousel;
 
   auto *title = lv_label_create(parent);
   lv_label_set_text(title, "Settings");
@@ -160,46 +172,21 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs, BrightnessController *bri
   lv_obj_set_pos(level_label_, 56, 124 + 5);
   lv_obj_set_size(level_label_, 120, 18);
 
-  apply_active_pill_styles();
-
   hairline(parent, 158);
 
-  // Device
-  auto *device_label = lv_label_create(parent);
-  lv_label_set_text(device_label, "Device");
-  lv_obj_set_style_text_color(device_label, theme::fg_muted(), 0);
-  lv_obj_set_style_text_font(device_label, &lv_font_montserrat_12, 0);
-  lv_obj_align(device_label, LV_ALIGN_TOP_LEFT, 4, 168);
+  // Carousel
+  auto *car_label = lv_label_create(parent);
+  lv_label_set_text(car_label, "Carousel");
+  lv_obj_set_style_text_color(car_label, theme::fg_muted(), 0);
+  lv_obj_set_style_text_font(car_label, &lv_font_montserrat_12, 0);
+  lv_obj_align(car_label, LV_ALIGN_TOP_LEFT, 4, 168);
 
-  hostname_label_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(hostname_label_, theme::fg(), 0);
-  lv_obj_set_style_text_font(hostname_label_, &lv_font_montserrat_14, 0);
-  lv_obj_align(hostname_label_, LV_ALIGN_TOP_LEFT, 4, 186);
-  lv_label_set_text(hostname_label_, "-");
+  on_pill_  = make_pill(parent, "On",  8,   190);
+  off_pill_ = make_pill(parent, "Off", 128, 190);
+  lv_obj_add_event_cb(on_pill_,  on_carousel_on_clicked,  LV_EVENT_CLICKED, this);
+  lv_obj_add_event_cb(off_pill_, on_carousel_off_clicked, LV_EVENT_CLICKED, this);
 
-  ip_label_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(ip_label_, theme::fg_muted(), 0);
-  lv_obj_set_style_text_font(ip_label_, &lv_font_montserrat_12, 0);
-  lv_obj_align(ip_label_, LV_ALIGN_TOP_LEFT, 4, 204);
-  lv_label_set_text(ip_label_, "-");
-
-  version_label_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(version_label_, theme::fg_muted(), 0);
-  lv_obj_set_style_text_font(version_label_, &lv_font_montserrat_12, 0);
-  lv_obj_align(version_label_, LV_ALIGN_TOP_LEFT, 4, 220);
-#ifdef FIRMWARE_VERSION
-  char vbuf[32];
-  snprintf(vbuf, sizeof(vbuf), "v%s", FIRMWARE_VERSION);
-  lv_label_set_text(version_label_, vbuf);
-#else
-  lv_label_set_text(version_label_, "v?");
-#endif
-
-  daemon_label_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(daemon_label_, theme::fg_muted(), 0);
-  lv_obj_set_style_text_font(daemon_label_, &lv_font_montserrat_12, 0);
-  lv_obj_align(daemon_label_, LV_ALIGN_TOP_LEFT, 4, 236);
-  lv_label_set_text(daemon_label_, "daemon -");
+  apply_active_pill_styles();
 }
 
 void ScreenSettings::apply_active_pill_styles() {
@@ -210,7 +197,6 @@ void ScreenSettings::apply_active_pill_styles() {
   if (minus_pill_ && plus_pill_ && level_label_ && brightness_) {
     int idx = duty_to_idx(brightness_->level());
     lv_label_set_text(level_label_, idx_to_name(idx));
-    // +/- pills always render as inactive-styled (always tappable, never "selected").
     auto inactive = [](lv_obj_t *pill) {
       lv_obj_set_style_bg_opa(pill, LV_OPA_TRANSP, 0);
       lv_obj_set_style_border_color(pill, theme::fg_muted(), 0);
@@ -220,25 +206,11 @@ void ScreenSettings::apply_active_pill_styles() {
     inactive(minus_pill_);
     inactive(plus_pill_);
   }
-}
 
-void ScreenSettings::set_device_info(const char *hostname, const char *ip, const char *version) {
-  if (hostname) lv_label_set_text(hostname_label_, hostname);
-  if (ip) lv_label_set_text(ip_label_, ip);
-  if (version) {
-    char vbuf[32];
-    snprintf(vbuf, sizeof(vbuf), "v%s", version);
-    lv_label_set_text(version_label_, vbuf);
-  }
-}
-
-void ScreenSettings::update(const Stats &s) {
-  if (s.stale) {
-    lv_label_set_text(daemon_label_, "daemon - stale");
-    lv_obj_set_style_text_color(daemon_label_, theme::warn(), 0);
-  } else {
-    lv_label_set_text(daemon_label_, "daemon - ok");
-    lv_obj_set_style_text_color(daemon_label_, theme::ok(), 0);
+  if (on_pill_ && off_pill_ && carousel_) {
+    bool is_on = carousel_->is_enabled();
+    if (is_on) apply_pill_pair_styles(on_pill_, off_pill_);
+    else       apply_pill_pair_styles(off_pill_, on_pill_);
   }
 }
 
@@ -256,6 +228,11 @@ void ScreenSettings::step_brightness(int direction) {
   if (idx > 3) idx = 3;
   brightness_->set_level(idx_to_duty(idx));
   apply_active_pill_styles();  // updates level label + restyles pills
+}
+
+void ScreenSettings::apply_carousel(bool on) {
+  if (carousel_) carousel_->set_enabled(on);
+  apply_active_pill_styles();  // re-style without restart
 }
 
 }  // namespace cyd
