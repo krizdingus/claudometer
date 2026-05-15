@@ -12,7 +12,7 @@ namespace cyd {
 void ScreenDevice::build(lv_obj_t *parent) {
   auto *title = lv_label_create(parent);
   lv_label_set_text(title, "Device");
-  lv_obj_set_style_text_color(title, theme::fg_muted(), 0);
+  lv_obj_set_style_text_color(title, theme::fg(), 0);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_12, 0);
   lv_obj_align(title, LV_ALIGN_TOP_LEFT, 4, 0);
 
