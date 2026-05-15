@@ -19,6 +19,17 @@ constexpr Palette kDark = {
     .alert    = 0xD9614D,
 };
 
+constexpr Palette kLight = {
+    .bg       = 0xF0EEE6,
+    .fg       = 0x1F1E1B,
+    .fg_muted = 0x7A766E,
+    .accent   = 0xC26542,
+    .bar_bg   = 0xE1DED2,
+    .ok       = 0x5E9A6E,
+    .warn     = 0xC9A23F,
+    .alert    = 0xB85240,
+};
+
 Mode current_ = Mode::Dark;
 
 }  // namespace
@@ -27,8 +38,7 @@ void set_mode(Mode m) { current_ = m; }
 Mode get_mode() { return current_; }
 
 const Palette& palette() {
-  // Light palette added in Task 4; for now only dark.
-  return kDark;
+  return current_ == Mode::Light ? kLight : kDark;
 }
 
 lv_color_t bg()       { return lv_color_hex(palette().bg); }
