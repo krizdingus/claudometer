@@ -23,6 +23,15 @@ uint8_t curve(uint16_t adc) {
   return (uint8_t)duty;
 }
 
-// ramp_step() defined in next steps.
+uint8_t ramp_step(uint8_t current, uint8_t target, uint8_t max_step) {
+  if (current == target) return current;
+  if (current < target) {
+    uint8_t delta = target - current;
+    return delta <= max_step ? target : (uint8_t)(current + max_step);
+  } else {
+    uint8_t delta = current - target;
+    return delta <= max_step ? target : (uint8_t)(current - max_step);
+  }
+}
 
 }  // namespace cyd
