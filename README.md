@@ -6,14 +6,14 @@ A glanceable usage monitor for [Claude Code](https://claude.com/claude-code) tha
 
 Six screens, swipeable by touch:
 
-- **Home** — current session burn, plan name, time until the next 5-hour block resets
-- **Session** — token totals for the active session (input / output / cache)
-- **Models** — per-model split for the session (Haiku / Sonnet / Opus)
-- **Sonnet** — Sonnet-specific token mix detail
-- **Routines** — your scheduled Claude routines with status, last run, and next run
-- **Budgets** — weekly all-models and weekly Opus-only caps as bar gauges
+- **Home** — session burn % as the hero, weekly cap underneath, today's tokens and spend at the bottom. The glance view.
+- **Session** — big arc with the current 5-hour block percentage and time until reset.
+- **Budgets** — all-models weekly cap as the hero, Opus-only cap as a secondary row, plan and reset countdown below.
+- **Models** — today's spend in dollars as the hero, then per-model token bars (Opus / Sonnet / Haiku).
+- **Routines** — next scheduled run as the hero, then the configured routines with status pills and recent activity.
+- **Settings** — light/dark theme toggle (persists across reboots) and device info (hostname, IP, firmware version, daemon health).
 
-A status bar across the top shows the current time (pulled from the host daemon) and a connection indicator. Long-press anywhere on the screen to factory-reset NVS and re-pair from scratch.
+A status bar across the top shows your plan, the current time (from the host daemon), and a daemon-health indicator. Long-press anywhere to factory-reset NVS and re-pair from scratch.
 
 The host daemon reads Claude Code's local JSONL logs in `~/.claude/projects/` directly. No cloud round-trip, no API key. The CYD polls the daemon over your LAN every few seconds.
 
