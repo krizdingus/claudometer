@@ -5,6 +5,7 @@
 #include <Arduino.h>
 #include <stdio.h>
 
+#include "app/brightness_controller.h"
 #include "hw/nvs.h"
 #include "ui/theme.h"
 
@@ -47,6 +48,7 @@ lv_obj_t *make_pill(lv_obj_t *parent, const char *text, int x, int y) {
   return pill;
 }
 
+// Both pills must be created via make_pill() (label is stored as user_data).
 void apply_pill_pair_styles(lv_obj_t *active, lv_obj_t *inactive) {
   // Active pill: filled with accent.
   lv_obj_set_style_bg_color(active, theme::accent(), 0);
@@ -72,10 +74,21 @@ static void on_light_clicked(lv_event_t *e) {
   if (self) self->apply_mode_and_restart(1);
 }
 
+static void on_auto_clicked(lv_event_t *e) {
+  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
+  if (self) self->apply_auto_brightness(true);
+}
+
+static void on_off_clicked(lv_event_t *e) {
+  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
+  if (self) self->apply_auto_brightness(false);
+}
+
 }  // namespace
 
-void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs) {
+void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs, BrightnessController *brightness) {
   nvs_ = nvs;
+  brightness_ = brightness;
 
   auto *title = lv_label_create(parent);
   lv_label_set_text(title, "Settings");
@@ -85,6 +98,7 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs) {
 
   hairline(parent, 24);
 
+  // Theme
   auto *theme_label = lv_label_create(parent);
   lv_label_set_text(theme_label, "Theme");
   lv_obj_set_style_text_color(theme_label, theme::fg_muted(), 0);
@@ -95,32 +109,48 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs) {
   light_pill_ = make_pill(parent, "Light", 128, 58);
   lv_obj_add_event_cb(dark_pill_,  on_dark_clicked,  LV_EVENT_CLICKED, this);
   lv_obj_add_event_cb(light_pill_, on_light_clicked, LV_EVENT_CLICKED, this);
+
+  hairline(parent, 92);
+
+  // Brightness
+  auto *bright_label = lv_label_create(parent);
+  lv_label_set_text(bright_label, "Brightness");
+  lv_obj_set_style_text_color(bright_label, theme::fg_muted(), 0);
+  lv_obj_set_style_text_font(bright_label, &lv_font_montserrat_12, 0);
+  lv_obj_align(bright_label, LV_ALIGN_TOP_LEFT, 4, 102);
+
+  auto_pill_ = make_pill(parent, "Auto", 8,   124);
+  off_pill_  = make_pill(parent, "Off",  128, 124);
+  lv_obj_add_event_cb(auto_pill_, on_auto_clicked, LV_EVENT_CLICKED, this);
+  lv_obj_add_event_cb(off_pill_,  on_off_clicked,  LV_EVENT_CLICKED, this);
+
   apply_active_pill_styles();
 
-  hairline(parent, 100);
+  hairline(parent, 158);
 
+  // Device
   auto *device_label = lv_label_create(parent);
   lv_label_set_text(device_label, "Device");
   lv_obj_set_style_text_color(device_label, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(device_label, &lv_font_montserrat_12, 0);
-  lv_obj_align(device_label, LV_ALIGN_TOP_LEFT, 4, 110);
+  lv_obj_align(device_label, LV_ALIGN_TOP_LEFT, 4, 168);
 
   hostname_label_ = lv_label_create(parent);
   lv_obj_set_style_text_color(hostname_label_, theme::fg(), 0);
   lv_obj_set_style_text_font(hostname_label_, &lv_font_montserrat_14, 0);
-  lv_obj_align(hostname_label_, LV_ALIGN_TOP_LEFT, 4, 128);
+  lv_obj_align(hostname_label_, LV_ALIGN_TOP_LEFT, 4, 186);
   lv_label_set_text(hostname_label_, "-");
 
   ip_label_ = lv_label_create(parent);
   lv_obj_set_style_text_color(ip_label_, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(ip_label_, &lv_font_montserrat_12, 0);
-  lv_obj_align(ip_label_, LV_ALIGN_TOP_LEFT, 4, 148);
+  lv_obj_align(ip_label_, LV_ALIGN_TOP_LEFT, 4, 204);
   lv_label_set_text(ip_label_, "-");
 
   version_label_ = lv_label_create(parent);
   lv_obj_set_style_text_color(version_label_, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(version_label_, &lv_font_montserrat_12, 0);
-  lv_obj_align(version_label_, LV_ALIGN_TOP_LEFT, 4, 168);
+  lv_obj_align(version_label_, LV_ALIGN_TOP_LEFT, 4, 220);
 #ifdef FIRMWARE_VERSION
   char vbuf[32];
   snprintf(vbuf, sizeof(vbuf), "v%s", FIRMWARE_VERSION);
@@ -132,7 +162,7 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs) {
   daemon_label_ = lv_label_create(parent);
   lv_obj_set_style_text_color(daemon_label_, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(daemon_label_, &lv_font_montserrat_12, 0);
-  lv_obj_align(daemon_label_, LV_ALIGN_TOP_LEFT, 4, 188);
+  lv_obj_align(daemon_label_, LV_ALIGN_TOP_LEFT, 4, 236);
   lv_label_set_text(daemon_label_, "daemon -");
 }
 
@@ -140,6 +170,12 @@ void ScreenSettings::apply_active_pill_styles() {
   bool is_dark = theme::get_mode() == theme::Mode::Dark;
   if (is_dark) apply_pill_pair_styles(dark_pill_, light_pill_);
   else         apply_pill_pair_styles(light_pill_, dark_pill_);
+
+  if (auto_pill_ && off_pill_ && brightness_) {
+    bool is_auto = brightness_->is_auto();
+    if (is_auto) apply_pill_pair_styles(auto_pill_, off_pill_);
+    else         apply_pill_pair_styles(off_pill_, auto_pill_);
+  }
 }
 
 void ScreenSettings::set_device_info(const char *hostname, const char *ip, const char *version) {
@@ -167,6 +203,11 @@ void ScreenSettings::apply_mode_and_restart(int mode) {
   Serial.printf("theme: switching to %s, restarting\n", mode == 1 ? "light" : "dark");
   delay(150);
   ESP.restart();
+}
+
+void ScreenSettings::apply_auto_brightness(bool on) {
+  if (brightness_) brightness_->set_auto(on);
+  apply_active_pill_styles();  // re-style without restart
 }
 
 }  // namespace cyd
