@@ -31,7 +31,5 @@ constexpr int FT_SDA = 33;
 constexpr int FT_SCL = 32;
 constexpr uint8_t FT_ADDR = 0x38;
 
-// CYD ambient-light sensor (photoresistor → ADC).
-constexpr int LDR = 34;  // ADC1_CH6, input-only.
 
 } // namespace cyd::pins

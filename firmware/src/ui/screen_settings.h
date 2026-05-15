@@ -26,16 +26,18 @@ class ScreenSettings {
   // palette. mode: 0 = dark, 1 = light.
   void apply_mode_and_restart(int mode);
 
-  // Applies & persists the Auto/Off brightness toggle. Live, no restart.
-  void apply_auto_brightness(bool on);
+  // Applies & persists a brightness level. Live, no restart.
+  void apply_brightness(uint8_t duty);
 
  private:
   Nvs *nvs_ = nullptr;
   BrightnessController *brightness_ = nullptr;
   lv_obj_t *dark_pill_ = nullptr;
   lv_obj_t *light_pill_ = nullptr;
-  lv_obj_t *auto_pill_ = nullptr;
-  lv_obj_t *off_pill_ = nullptr;
+  lv_obj_t *low_pill_ = nullptr;
+  lv_obj_t *med_pill_ = nullptr;
+  lv_obj_t *high_pill_ = nullptr;
+  lv_obj_t *max_pill_ = nullptr;
   lv_obj_t *hostname_label_ = nullptr;
   lv_obj_t *ip_label_ = nullptr;
   lv_obj_t *version_label_ = nullptr;

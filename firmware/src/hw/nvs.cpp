@@ -4,6 +4,8 @@
 
 #include <Preferences.h>
 
+#include "app/app_config.h"
+
 namespace cyd {
 
 namespace {
@@ -50,9 +52,9 @@ bool Nvs::has_theme() const { return prefs.isKey("theme"); }
 int Nvs::theme_mode() const { return prefs.getInt("theme", 0); }
 void Nvs::save_theme(int mode) { prefs.putInt("theme", mode); }
 
-bool Nvs::has_auto_bright() const { return prefs.isKey("auto_bright"); }
-bool Nvs::auto_bright() const { return prefs.getBool("auto_bright", true); }
-void Nvs::save_auto_bright(bool on) { prefs.putBool("auto_bright", on); }
+bool Nvs::has_brightness() const { return prefs.isKey("brightness"); }
+uint8_t Nvs::brightness() const { return (uint8_t)prefs.getUChar("brightness", kBrightnessDefault); }
+void Nvs::save_brightness(uint8_t duty) { prefs.putUChar("brightness", duty); }
 
 void Nvs::factory_reset() {
   prefs.clear();

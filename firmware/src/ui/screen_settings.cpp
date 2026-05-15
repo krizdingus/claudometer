@@ -5,6 +5,7 @@
 #include <Arduino.h>
 #include <stdio.h>
 
+#include "app/app_config.h"
 #include "app/brightness_controller.h"
 #include "hw/nvs.h"
 #include "ui/theme.h"
@@ -24,9 +25,9 @@ lv_obj_t *hairline(lv_obj_t *parent, int y) {
   return h;
 }
 
-lv_obj_t *make_pill(lv_obj_t *parent, const char *text, int x, int y) {
+lv_obj_t *make_pill(lv_obj_t *parent, const char *text, int x, int y, int w = 96) {
   auto *pill = lv_obj_create(parent);
-  lv_obj_set_size(pill, 96, 28);
+  lv_obj_set_size(pill, w, 28);
   lv_obj_set_pos(pill, x, y);
   lv_obj_set_style_radius(pill, 14, 0);
   lv_obj_set_style_border_width(pill, 1, 0);
@@ -74,14 +75,24 @@ static void on_light_clicked(lv_event_t *e) {
   if (self) self->apply_mode_and_restart(1);
 }
 
-static void on_auto_clicked(lv_event_t *e) {
+static void on_low_clicked(lv_event_t *e) {
   auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
-  if (self) self->apply_auto_brightness(true);
+  if (self) self->apply_brightness(kBrightnessLow);
 }
 
-static void on_off_clicked(lv_event_t *e) {
+static void on_med_clicked(lv_event_t *e) {
   auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
-  if (self) self->apply_auto_brightness(false);
+  if (self) self->apply_brightness(kBrightnessMed);
+}
+
+static void on_high_clicked(lv_event_t *e) {
+  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
+  if (self) self->apply_brightness(kBrightnessHigh);
+}
+
+static void on_max_clicked(lv_event_t *e) {
+  auto *self = static_cast<ScreenSettings *>(lv_event_get_user_data(e));
+  if (self) self->apply_brightness(kBrightnessMax);
 }
 
 }  // namespace
@@ -119,10 +130,14 @@ void ScreenSettings::build(lv_obj_t *parent, Nvs *nvs, BrightnessController *bri
   lv_obj_set_style_text_font(bright_label, &lv_font_montserrat_12, 0);
   lv_obj_align(bright_label, LV_ALIGN_TOP_LEFT, 4, 102);
 
-  auto_pill_ = make_pill(parent, "Auto", 8,   124);
-  off_pill_  = make_pill(parent, "Off",  128, 124);
-  lv_obj_add_event_cb(auto_pill_, on_auto_clicked, LV_EVENT_CLICKED, this);
-  lv_obj_add_event_cb(off_pill_,  on_off_clicked,  LV_EVENT_CLICKED, this);
+  low_pill_  = make_pill(parent, "Low",  8,   124, 52);
+  med_pill_  = make_pill(parent, "Med",  68,  124, 52);
+  high_pill_ = make_pill(parent, "High", 128, 124, 52);
+  max_pill_  = make_pill(parent, "Max",  188, 124, 52);
+  lv_obj_add_event_cb(low_pill_,  on_low_clicked,  LV_EVENT_CLICKED, this);
+  lv_obj_add_event_cb(med_pill_,  on_med_clicked,  LV_EVENT_CLICKED, this);
+  lv_obj_add_event_cb(high_pill_, on_high_clicked, LV_EVENT_CLICKED, this);
+  lv_obj_add_event_cb(max_pill_,  on_max_clicked,  LV_EVENT_CLICKED, this);
 
   apply_active_pill_styles();
 
@@ -171,10 +186,27 @@ void ScreenSettings::apply_active_pill_styles() {
   if (is_dark) apply_pill_pair_styles(dark_pill_, light_pill_);
   else         apply_pill_pair_styles(light_pill_, dark_pill_);
 
-  if (auto_pill_ && off_pill_ && brightness_) {
-    bool is_auto = brightness_->is_auto();
-    if (is_auto) apply_pill_pair_styles(auto_pill_, off_pill_);
-    else         apply_pill_pair_styles(off_pill_, auto_pill_);
+  if (low_pill_ && med_pill_ && high_pill_ && max_pill_ && brightness_) {
+    uint8_t duty = brightness_->level();
+    // Style each pill: active if it matches the current duty, inactive otherwise.
+    lv_obj_t *pills[4] = {low_pill_, med_pill_, high_pill_, max_pill_};
+    uint8_t duties[4]  = {kBrightnessLow, kBrightnessMed, kBrightnessHigh, kBrightnessMax};
+    for (int i = 0; i < 4; i++) {
+      if (duties[i] == duty) {
+        // active style
+        lv_obj_set_style_bg_color(pills[i], theme::accent(), 0);
+        lv_obj_set_style_bg_opa(pills[i], LV_OPA_COVER, 0);
+        lv_obj_set_style_border_color(pills[i], theme::accent(), 0);
+        auto *label = static_cast<lv_obj_t *>(lv_obj_get_user_data(pills[i]));
+        lv_obj_set_style_text_color(label, theme::bg(), 0);
+      } else {
+        // inactive style
+        lv_obj_set_style_bg_opa(pills[i], LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_color(pills[i], theme::fg_muted(), 0);
+        auto *label = static_cast<lv_obj_t *>(lv_obj_get_user_data(pills[i]));
+        lv_obj_set_style_text_color(label, theme::fg(), 0);
+      }
+    }
   }
 }
 
@@ -205,8 +237,8 @@ void ScreenSettings::apply_mode_and_restart(int mode) {
   ESP.restart();
 }
 
-void ScreenSettings::apply_auto_brightness(bool on) {
-  if (brightness_) brightness_->set_auto(on);
+void ScreenSettings::apply_brightness(uint8_t duty) {
+  if (brightness_) brightness_->set_level(duty);
   apply_active_pill_styles();  // re-style without restart
 }
 

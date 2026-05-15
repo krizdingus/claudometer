@@ -34,14 +34,11 @@ enum Screen : uint8_t {
 constexpr int kStatusBarHeight = 18;
 constexpr int kFooterHeight    = 18;
 
-// Auto-brightness. See spec 2026-05-15-auto-brightness-design.md.
-// Curve endpoints are CALIBRATED ON HARDWARE — see plan Task 12.
-constexpr uint32_t kSamplePeriodMs   = 250;   // 4 Hz sampling.
-constexpr uint8_t  kMaxStepPerTick   = 8;     // Ramp slew; ~8 s for full swing.
-constexpr uint8_t  kDefaultBrightness = 200;  // Used when Auto is Off.
-constexpr uint16_t kAdcDark   = 200;          // PLACEHOLDER — calibrate.
-constexpr uint16_t kAdcBright = 3000;         // PLACEHOLDER — calibrate.
-constexpr uint8_t  kDutyFloor = 40;           // ~16% of 255.
-constexpr uint8_t  kDutyCeil  = 255;
+// Brightness presets — Low/Med/High/Max (manual levels in Settings).
+constexpr uint8_t kBrightnessLow  = 64;   // ~25%
+constexpr uint8_t kBrightnessMed  = 128;  // ~50%
+constexpr uint8_t kBrightnessHigh = 200;  // ~78% — matches pre-feature default
+constexpr uint8_t kBrightnessMax  = 255;  // 100%
+constexpr uint8_t kBrightnessDefault = kBrightnessHigh;
 
 } // namespace cyd

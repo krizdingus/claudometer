@@ -13,7 +13,6 @@
 #include "app/plan_names.h"
 #include "app/state_machine.h"
 #include "hw/display.h"
-#include "hw/light_sensor.h"
 #include "hw/nvs.h"
 #include "hw/touch.h"
 #include "net/mdns_discover.h"
@@ -39,7 +38,6 @@ namespace {
 State current_state = State::BOOT;
 Context ctx_;
 Nvs *nvs_ = nullptr;
-LightSensor *light_sensor_ = nullptr;
 BrightnessController *brightness_ = nullptr;
 Chrome *chrome_ = nullptr;
 Tileview *tileview_ = nullptr;
@@ -227,11 +225,9 @@ void app_init() {
   int theme_mode = nvs_->has_theme() ? nvs_->theme_mode() : 0;
   theme::set_mode(theme_mode == 1 ? theme::Mode::Light : theme::Mode::Dark);
 
-  light_sensor_ = new LightSensor();
-  light_sensor_->begin();
   brightness_ = new BrightnessController();
   // display().init() must have run first — begin() writes via setBrightness().
-  brightness_->begin(light_sensor_, nvs_);
+  brightness_->begin(nvs_);
 
   root_ = lv_screen_active();
   lv_obj_set_style_bg_color(root_, theme::bg(), 0);
@@ -308,7 +304,6 @@ void app_init() {
 
 void app_tick() {
   lvgl_tick();
-  if (brightness_) brightness_->tick(millis());
   static LongPress long_press;
   auto ev = touch().poll();
   if (long_press.update(ev.pressed, millis(), kLongPressMs)) {
