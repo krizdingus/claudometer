@@ -8,10 +8,12 @@
 #include <lvgl.h>
 
 #include "app/app_config.h"
+#include "app/brightness_controller.h"
 #include "app/long_press.h"
 #include "app/plan_names.h"
 #include "app/state_machine.h"
 #include "hw/display.h"
+#include "hw/light_sensor.h"
 #include "hw/nvs.h"
 #include "hw/touch.h"
 #include "net/mdns_discover.h"
@@ -37,6 +39,8 @@ namespace {
 State current_state = State::BOOT;
 Context ctx_;
 Nvs *nvs_ = nullptr;
+LightSensor *light_sensor_ = nullptr;
+BrightnessController *brightness_ = nullptr;
 Chrome *chrome_ = nullptr;
 Tileview *tileview_ = nullptr;
 ScreenHome *scr_home_ = nullptr;
@@ -223,6 +227,11 @@ void app_init() {
   int theme_mode = nvs_->has_theme() ? nvs_->theme_mode() : 0;
   theme::set_mode(theme_mode == 1 ? theme::Mode::Light : theme::Mode::Dark);
 
+  light_sensor_ = new LightSensor();
+  light_sensor_->begin();
+  brightness_ = new BrightnessController();
+  brightness_->begin(light_sensor_, nvs_);
+
   root_ = lv_screen_active();
   lv_obj_set_style_bg_color(root_, theme::bg(), 0);
 
@@ -266,7 +275,7 @@ void app_init() {
   scr_routines_->build(tileview_->tile(SCR_ROUTINES));
   scr_budgets_->build(tileview_->tile(SCR_BUDGETS));
   scr_settings_ = new ScreenSettings();
-  scr_settings_->build(tileview_->tile(SCR_SETTINGS), nvs_);
+  scr_settings_->build(tileview_->tile(SCR_SETTINGS), nvs_, brightness_);
   {
     String ip_str = WiFi.localIP().toString();
     String host_str = WiFi.getHostname();
@@ -298,6 +307,7 @@ void app_init() {
 
 void app_tick() {
   lvgl_tick();
+  if (brightness_) brightness_->tick(millis());
   static LongPress long_press;
   auto ev = touch().poll();
   if (long_press.update(ev.pressed, millis(), kLongPressMs)) {
