@@ -17,7 +17,10 @@ void Carousel::begin(Nvs *nvs, Tileview *tv) {
   tv_ = tv;
   enabled_ = nvs_->carousel();
   last_advance_ms_ = millis();
-  last_touch_ms_ = millis();
+  // Pretend the last touch was just over the resume window ago, so the
+  // first auto-advance fires at +kCarouselIntervalMs after boot, not
+  // +kCarouselResumeMs. uint32_t subtraction wraps; that's fine.
+  last_touch_ms_ = millis() - kCarouselResumeMs - 1;
 }
 
 void Carousel::tick(uint32_t now_ms, bool touch_pressed) {
