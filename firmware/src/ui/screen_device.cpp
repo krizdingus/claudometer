@@ -51,6 +51,32 @@ void ScreenDevice::build(lv_obj_t *parent) {
   lv_obj_set_style_text_font(daemon_label_, &lv_font_montserrat_12, 0);
   lv_obj_align(daemon_label_, LV_ALIGN_TOP_LEFT, 4, 104);
   lv_label_set_text(daemon_label_, "daemon -");
+
+  auto *divider = lv_obj_create(parent);
+  lv_obj_set_size(divider, 224, 1);
+  lv_obj_align(divider, LV_ALIGN_TOP_LEFT, 4, 148);
+  lv_obj_set_style_bg_color(divider, theme::bar_bg(), 0);
+  lv_obj_set_style_bg_opa(divider, LV_OPA_COVER, 0);
+  lv_obj_set_style_border_width(divider, 0, 0);
+  lv_obj_set_style_radius(divider, 0, 0);
+
+  auto *repo = lv_label_create(parent);
+  lv_obj_set_style_text_color(repo, theme::fg_muted(), 0);
+  lv_obj_set_style_text_font(repo, &lv_font_montserrat_12, 0);
+  lv_obj_align(repo, LV_ALIGN_TOP_LEFT, 4, 158);
+  lv_label_set_text(repo, "github.com/krizdingus/claudometer");
+
+  auto *site = lv_label_create(parent);
+  lv_obj_set_style_text_color(site, theme::fg_muted(), 0);
+  lv_obj_set_style_text_font(site, &lv_font_montserrat_12, 0);
+  lv_obj_align(site, LV_ALIGN_TOP_LEFT, 4, 178);
+  lv_label_set_text(site, "krizdingus.com");
+
+  auto *author = lv_label_create(parent);
+  lv_obj_set_style_text_color(author, theme::fg_muted(), 0);
+  lv_obj_set_style_text_font(author, &lv_font_montserrat_12, 0);
+  lv_obj_align(author, LV_ALIGN_TOP_LEFT, 4, 198);
+  lv_label_set_text(author, "2026 All Krizdingus fault");
 }
 
 void ScreenDevice::update(const Stats &s) {
