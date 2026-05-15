@@ -109,8 +109,15 @@ void update_all_screens(const Stats &s) {
   if (scr_budgets_) scr_budgets_->update(s);
   if (scr_device_) {
     scr_device_->update(s);
+    String host_str = WiFi.getHostname();
+    String ip_str   = WiFi.localIP().toString();
     String ssid_str = WiFi.SSID();
     int rssi = WiFi.RSSI();
+#ifdef FIRMWARE_VERSION
+    scr_device_->set_device_info(host_str.c_str(), ip_str.c_str(), FIRMWARE_VERSION);
+#else
+    scr_device_->set_device_info(host_str.c_str(), ip_str.c_str(), "?");
+#endif
     scr_device_->set_wifi_info(ssid_str.c_str(), rssi);
   }
   if (chrome_) {
@@ -228,7 +235,6 @@ void app_init() {
   brightness_->begin(nvs_);
 
   carousel_ = new Carousel();
-  // tileview_ is constructed below; defer carousel_->begin() until after.
 
   root_ = lv_screen_active();
   lv_obj_set_style_bg_color(root_, theme::bg(), 0);
@@ -272,25 +278,13 @@ void app_init() {
   scr_models_->build(tileview_->tile(SCR_MODELS));
   scr_routines_->build(tileview_->tile(SCR_ROUTINES));
   scr_budgets_->build(tileview_->tile(SCR_BUDGETS));
+  // Initialize Carousel before building Settings — Settings reads
+  // carousel_->is_enabled() while applying its initial pill styles.
+  carousel_->begin(nvs_, tileview_);
   scr_settings_ = new ScreenSettings();
   scr_settings_->build(tileview_->tile(SCR_SETTINGS), nvs_, brightness_, carousel_);
   scr_device_ = new ScreenDevice();
   scr_device_->build(tileview_->tile(SCR_DEVICE));
-
-  carousel_->begin(nvs_, tileview_);
-
-  {
-    String ip_str = WiFi.localIP().toString();
-    String host_str = WiFi.getHostname();
-    String ssid_str = WiFi.SSID();
-    int rssi = WiFi.RSSI();
-#ifdef FIRMWARE_VERSION
-    scr_device_->set_device_info(host_str.c_str(), ip_str.c_str(), FIRMWARE_VERSION);
-#else
-    scr_device_->set_device_info(host_str.c_str(), ip_str.c_str(), "?");
-#endif
-    scr_device_->set_wifi_info(ssid_str.c_str(), rssi);
-  }
 
   mdns_ = new MdnsDiscover();
   stats_client_ = new StatsClient();
