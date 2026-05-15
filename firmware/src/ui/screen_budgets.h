@@ -23,7 +23,8 @@ class ScreenBudgets {
   Row code_all_, code_opus_;
   lv_obj_t *plan_ = nullptr;
   lv_obj_t *resets_ = nullptr;
-  lv_obj_t *warn_ = nullptr;
+  lv_obj_t *hero_pct_ = nullptr;
+  lv_obj_t *hero_bar_ = nullptr;
 };
 
 } // namespace cyd

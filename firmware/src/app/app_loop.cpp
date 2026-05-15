@@ -9,6 +9,7 @@
 
 #include "app/app_config.h"
 #include "app/long_press.h"
+#include "app/plan_names.h"
 #include "app/state_machine.h"
 #include "hw/display.h"
 #include "hw/nvs.h"
@@ -25,7 +26,7 @@
 #include "ui/screen_models.h"
 #include "ui/screen_routines.h"
 #include "ui/screen_session.h"
-#include "ui/screen_sonnet.h"
+#include "ui/screen_settings.h"
 #include "ui/theme.h"
 #include "ui/tileview.h"
 
@@ -41,9 +42,9 @@ Tileview *tileview_ = nullptr;
 ScreenHome *scr_home_ = nullptr;
 ScreenSession *scr_session_ = nullptr;
 ScreenModels *scr_models_ = nullptr;
-ScreenSonnet *scr_sonnet_ = nullptr;
 ScreenRoutines *scr_routines_ = nullptr;
 ScreenBudgets *scr_budgets_ = nullptr;
+ScreenSettings *scr_settings_ = nullptr;
 ProvisionScreen *prov_ = nullptr;
 DiscoverScreen *disc_ = nullptr;
 MdnsDiscover *mdns_ = nullptr;
@@ -98,12 +99,24 @@ void update_all_screens(const Stats &s) {
   if (scr_home_) scr_home_->update(s);
   if (scr_session_) scr_session_->update(s);
   if (scr_models_) scr_models_->update(s);
-  if (scr_sonnet_) scr_sonnet_->update(s);
   if (scr_routines_) scr_routines_->update(s);
   if (scr_budgets_) scr_budgets_->update(s);
+  if (scr_settings_) {
+    scr_settings_->update(s);
+    // Refresh device info from current WiFi state — at boot the IP is
+    // 0.0.0.0 since WiFi hasn't associated yet.
+    String ip_str = WiFi.localIP().toString();
+    String host_str = WiFi.getHostname();
+#ifdef FIRMWARE_VERSION
+    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), FIRMWARE_VERSION);
+#else
+    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), "?");
+#endif
+  }
   if (chrome_) {
     chrome_->set_health(s.stale ? 1 : 0);
     if (!s.local_time.empty()) chrome_->set_clock(s.local_time.c_str());
+    chrome_->set_plan(pretty_plan_str(s.budgets.plan));
   }
 }
 
@@ -183,6 +196,26 @@ bool try_connect_saved_wifi() {
   return true;
 }
 
+static void on_screen_click(lv_event_t *e) {
+  if (lv_event_get_code(e) != LV_EVENT_RELEASED) return;
+  if (!tileview_ || tileview_->active() != SCR_SETTINGS) return;
+  if (!scr_settings_) return;
+
+  lv_indev_t *indev = lv_indev_get_act();
+  if (!indev) return;
+  lv_point_t p;
+  lv_indev_get_point(indev, &p);
+
+  // Translate global screen coords to tile-local. The Settings tile starts
+  // at y = kStatusBarHeight; x is 0-based in the tileview content area.
+  int tile_x = p.x;
+  int tile_y = p.y - kStatusBarHeight;
+
+  if (tile_y < 0) return;  // tap was in chrome, ignore
+
+  scr_settings_->on_tap(tile_x, tile_y);
+}
+
 } // namespace
 
 void app_init() {
@@ -206,8 +239,12 @@ void app_init() {
     daemon_display_ = hp;
   }
 
+  // Apply stored theme before building UI
+  int theme_mode = nvs_->has_theme() ? nvs_->theme_mode() : 0;
+  theme::set_mode(theme_mode == 1 ? theme::Mode::Light : theme::Mode::Dark);
+
   root_ = lv_screen_active();
-  lv_obj_set_style_bg_color(root_, theme::c(theme::bg), 0);
+  lv_obj_set_style_bg_color(root_, theme::bg(), 0);
 
   chrome_ = new Chrome();
   chrome_->attach(root_);
@@ -215,7 +252,7 @@ void app_init() {
   pre_pairing_layer_ = lv_obj_create(root_);
   lv_obj_set_size(pre_pairing_layer_, 240, 320 - kStatusBarHeight - kFooterHeight);
   lv_obj_align(pre_pairing_layer_, LV_ALIGN_TOP_MID, 0, kStatusBarHeight);
-  lv_obj_set_style_bg_color(pre_pairing_layer_, theme::c(theme::bg), 0);
+  lv_obj_set_style_bg_color(pre_pairing_layer_, theme::bg(), 0);
   lv_obj_set_style_border_width(pre_pairing_layer_, 0, 0);
   lv_obj_set_style_radius(pre_pairing_layer_, 0, 0);
   lv_obj_set_style_pad_all(pre_pairing_layer_, 0, 0);
@@ -229,7 +266,7 @@ void app_init() {
   main_layer_ = lv_obj_create(root_);
   lv_obj_set_size(main_layer_, 240, 320 - kStatusBarHeight - kFooterHeight);
   lv_obj_align(main_layer_, LV_ALIGN_TOP_MID, 0, kStatusBarHeight);
-  lv_obj_set_style_bg_color(main_layer_, theme::c(theme::bg), 0);
+  lv_obj_set_style_bg_color(main_layer_, theme::bg(), 0);
   lv_obj_set_style_border_width(main_layer_, 0, 0);
   lv_obj_set_style_radius(main_layer_, 0, 0);
   lv_obj_set_style_pad_all(main_layer_, 0, 0);
@@ -241,15 +278,26 @@ void app_init() {
   scr_home_ = new ScreenHome();
   scr_session_ = new ScreenSession();
   scr_models_ = new ScreenModels();
-  scr_sonnet_ = new ScreenSonnet();
   scr_routines_ = new ScreenRoutines();
   scr_budgets_ = new ScreenBudgets();
   scr_home_->build(tileview_->tile(SCR_HOME));
   scr_session_->build(tileview_->tile(SCR_SESSION));
   scr_models_->build(tileview_->tile(SCR_MODELS));
-  scr_sonnet_->build(tileview_->tile(SCR_SONNET));
   scr_routines_->build(tileview_->tile(SCR_ROUTINES));
   scr_budgets_->build(tileview_->tile(SCR_BUDGETS));
+  scr_settings_ = new ScreenSettings();
+  scr_settings_->build(tileview_->tile(SCR_SETTINGS), nvs_);
+  {
+    String ip_str = WiFi.localIP().toString();
+    String host_str = WiFi.getHostname();
+#ifdef FIRMWARE_VERSION
+    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), FIRMWARE_VERSION);
+#else
+    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), "?");
+#endif
+  }
+
+  lv_obj_add_event_cb(root_, on_screen_click, LV_EVENT_RELEASED, nullptr);
 
   mdns_ = new MdnsDiscover();
   stats_client_ = new StatsClient();

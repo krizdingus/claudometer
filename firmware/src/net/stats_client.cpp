@@ -12,7 +12,7 @@
 namespace cyd {
 
 static const char *kScreenNames[] = {
-    "session", "models", "sonnet", "chat", "routines", "budgets"
+    "home", "session", "budgets", "models", "routines", "settings"
 };
 
 static std::string mask_to_query(uint8_t mask) {

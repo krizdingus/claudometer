@@ -24,13 +24,6 @@ struct ModelsTodayStat {
   double est_cost_usd = 0.0;
 };
 
-struct SonnetWeeklyStat {
-  int weekly_pct = 0;
-  int used = 0;
-  int cap = 0;
-  std::string pace; // "behind" | "on_track" | "ahead"
-};
-
 struct ChatStat {
   int messages_today = 0;
   int daily_cap = 0;
@@ -42,6 +35,7 @@ struct RoutineStat {
   std::string status;
   std::string last_run;
   std::string next_run;
+  int next_run_in_minutes = -1;  // -1 if no upcoming run
 };
 
 struct BudgetsStat {
@@ -58,7 +52,6 @@ struct Stats {
   std::string local_time; // HH:MM from daemon host's local TZ
   SessionStat session;
   ModelsTodayStat models_today;
-  SonnetWeeklyStat sonnet;
   ChatStat chat;
   std::vector<RoutineStat> routines;
   BudgetsStat budgets;

@@ -3,94 +3,122 @@
 #ifndef UNIT_TEST
 
 #include <stdio.h>
-#include <algorithm>
 
+#include "app/plan_names.h"
 #include "ui/theme.h"
 
 namespace cyd {
 
-static void build_row(lv_obj_t *parent, int y, const char *name,
-                      ScreenBudgets::Row &r) {
-  r.label = lv_label_create(parent);
-  lv_label_set_text(r.label, name);
-  lv_obj_set_style_text_color(r.label, theme::c(theme::fg), 0);
-  lv_obj_set_style_text_font(r.label, &lv_font_montserrat_14, 0);
-  lv_obj_align(r.label, LV_ALIGN_TOP_LEFT, 4, y);
+namespace {
 
-  r.bar = lv_bar_create(parent);
-  lv_obj_set_size(r.bar, 150, 14);
-  lv_obj_align(r.bar, LV_ALIGN_TOP_LEFT, 60, y + 2);
-  lv_bar_set_range(r.bar, 0, 100);
-  lv_obj_set_style_bg_color(r.bar, theme::c(0x222226), LV_PART_MAIN);
-  lv_obj_set_style_bg_color(r.bar, theme::c(theme::blue), LV_PART_INDICATOR);
-  lv_obj_set_style_radius(r.bar, 6, LV_PART_MAIN);
-  lv_obj_set_style_radius(r.bar, 6, LV_PART_INDICATOR);
-
-  r.pct = lv_label_create(parent);
-  lv_obj_set_style_text_color(r.pct, theme::c(theme::fg_muted), 0);
-  lv_obj_set_style_text_font(r.pct, &lv_font_montserrat_12, 0);
-  lv_obj_align(r.pct, LV_ALIGN_TOP_RIGHT, -4, y + 2);
+lv_obj_t *hairline(lv_obj_t *parent, int y) {
+  auto *h = lv_obj_create(parent);
+  lv_obj_set_size(h, 224, 1);
+  lv_obj_align(h, LV_ALIGN_TOP_LEFT, 4, y);
+  lv_obj_set_style_bg_color(h, theme::bar_bg(), 0);
+  lv_obj_set_style_bg_opa(h, LV_OPA_COVER, 0);
+  lv_obj_set_style_border_width(h, 0, 0);
+  lv_obj_set_style_radius(h, 0, 0);
+  return h;
 }
+
+}  // namespace
 
 void ScreenBudgets::build(lv_obj_t *parent) {
   auto *title = lv_label_create(parent);
-  lv_label_set_text(title, "Budgets - This Week");
-  lv_obj_set_style_text_color(title, theme::c(theme::fg_muted), 0);
-  lv_obj_set_style_text_font(title, &lv_font_montserrat_12, 0);
+  lv_label_set_text(title, "Caps");
+  lv_obj_set_style_text_color(title, theme::fg(), 0);
+  lv_obj_set_style_text_font(title, &lv_font_montserrat_16, 0);
   lv_obj_align(title, LV_ALIGN_TOP_LEFT, 4, 0);
 
-  build_row(parent, 24, "Code",  code_all_);
-  build_row(parent, 60, "Opus",  code_opus_);
+  // ALL MODELS — hero
+  auto *all_label = lv_label_create(parent);
+  lv_label_set_text(all_label, "ALL MODELS");
+  lv_obj_set_style_text_color(all_label, theme::fg_muted(), 0);
+  lv_obj_set_style_text_font(all_label, &lv_font_montserrat_12, 0);
+  lv_obj_align(all_label, LV_ALIGN_TOP_LEFT, 4, 26);
+
+  hero_pct_ = lv_label_create(parent);
+  lv_obj_set_style_text_color(hero_pct_, theme::fg(), 0);
+  lv_obj_set_style_text_font(hero_pct_, &lv_font_montserrat_48, 0);
+  lv_obj_align(hero_pct_, LV_ALIGN_TOP_LEFT, 4, 42);
+  lv_label_set_text(hero_pct_, "--%");
+
+  hero_bar_ = lv_bar_create(parent);
+  lv_obj_set_size(hero_bar_, 224, 8);
+  lv_obj_align(hero_bar_, LV_ALIGN_TOP_LEFT, 4, 100);
+  lv_bar_set_range(hero_bar_, 0, 100);
+  lv_obj_set_style_bg_color(hero_bar_, theme::bar_bg(), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(hero_bar_, theme::accent(), LV_PART_INDICATOR);
+  lv_obj_set_style_radius(hero_bar_, 4, LV_PART_MAIN);
+  lv_obj_set_style_radius(hero_bar_, 4, LV_PART_INDICATOR);
+
+  hairline(parent, 124);
+
+  // OPUS — secondary row
+  code_opus_.label = lv_label_create(parent);
+  lv_label_set_text(code_opus_.label, "OPUS");
+  lv_obj_set_style_text_color(code_opus_.label, theme::fg_muted(), 0);
+  lv_obj_set_style_text_font(code_opus_.label, &lv_font_montserrat_12, 0);
+  lv_obj_align(code_opus_.label, LV_ALIGN_TOP_LEFT, 4, 134);
+
+  code_opus_.pct = lv_label_create(parent);
+  lv_obj_set_style_text_color(code_opus_.pct, theme::fg(), 0);
+  lv_obj_set_style_text_font(code_opus_.pct, &lv_font_montserrat_14, 0);
+  lv_obj_align(code_opus_.pct, LV_ALIGN_TOP_RIGHT, -4, 134);
+
+  code_opus_.bar = lv_bar_create(parent);
+  lv_obj_set_size(code_opus_.bar, 224, 6);
+  lv_obj_align(code_opus_.bar, LV_ALIGN_TOP_LEFT, 4, 154);
+  lv_bar_set_range(code_opus_.bar, 0, 100);
+  lv_obj_set_style_bg_color(code_opus_.bar, theme::bar_bg(), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(code_opus_.bar, theme::accent(), LV_PART_INDICATOR);
+  lv_obj_set_style_radius(code_opus_.bar, 3, LV_PART_MAIN);
+  lv_obj_set_style_radius(code_opus_.bar, 3, LV_PART_INDICATOR);
+
+  hairline(parent, 180);
 
   plan_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(plan_, theme::c(theme::accent), 0);
-  lv_obj_set_style_text_font(plan_, &lv_font_montserrat_16, 0);
-  lv_obj_align(plan_, LV_ALIGN_TOP_LEFT, 4, 120);
+  lv_obj_set_style_text_color(plan_, theme::fg(), 0);
+  lv_obj_set_style_text_font(plan_, &lv_font_montserrat_14, 0);
+  lv_obj_align(plan_, LV_ALIGN_TOP_LEFT, 4, 190);
 
   resets_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(resets_, theme::c(theme::fg_muted), 0);
-  lv_obj_set_style_text_font(resets_, &lv_font_montserrat_14, 0);
-  lv_obj_align(resets_, LV_ALIGN_TOP_LEFT, 4, 148);
+  lv_obj_set_style_text_color(resets_, theme::fg_muted(), 0);
+  lv_obj_set_style_text_font(resets_, &lv_font_montserrat_12, 0);
+  lv_obj_align(resets_, LV_ALIGN_TOP_RIGHT, -4, 192);
 
-  warn_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(warn_, theme::c(theme::bg), 0);
-  lv_obj_set_style_text_font(warn_, &lv_font_montserrat_12, 0);
-  lv_obj_set_style_bg_color(warn_, theme::c(theme::red), 0);
-  lv_obj_set_style_bg_opa(warn_, LV_OPA_COVER, 0);
-  lv_obj_set_style_pad_all(warn_, 4, 0);
-  lv_obj_set_style_radius(warn_, 6, 0);
-  lv_obj_align(warn_, LV_ALIGN_TOP_LEFT, 4, 180);
-  lv_obj_add_flag(warn_, LV_OBJ_FLAG_HIDDEN);
-}
-
-static void set_row(ScreenBudgets::Row &r, int pct) {
-  lv_bar_set_value(r.bar, pct, LV_ANIM_OFF);
-  lv_obj_set_style_bg_color(r.bar, theme::bar_color_for_pct(pct), LV_PART_INDICATOR);
-  char b[8];
-  snprintf(b, sizeof(b), "%d%%", pct);
-  lv_label_set_text(r.pct, b);
+  // code_all_ row is no longer rendered — its data goes into hero_pct_/hero_bar_
+  code_all_.label = nullptr;
+  code_all_.bar = nullptr;
+  code_all_.pct = nullptr;
 }
 
 void ScreenBudgets::update(const Stats &s) {
-  set_row(code_all_, s.budgets.code_all);
-  set_row(code_opus_, s.budgets.code_opus);
+  int all = s.budgets.code_all;
+  char buf[16];
+  snprintf(buf, sizeof(buf), "%d%%", all);
+  lv_label_set_text(hero_pct_, buf);
+  lv_bar_set_value(hero_bar_, all, LV_ANIM_OFF);
+  lv_obj_set_style_bg_color(hero_bar_, theme::bar_color_for_pct(all), LV_PART_INDICATOR);
 
-  lv_label_set_text(plan_, s.budgets.plan.empty() ? "-" : s.budgets.plan.c_str());
+  int opus = s.budgets.code_opus;
+  snprintf(buf, sizeof(buf), "%d%%", opus);
+  lv_label_set_text(code_opus_.pct, buf);
+  lv_bar_set_value(code_opus_.bar, opus, LV_ANIM_OFF);
+  lv_obj_set_style_bg_color(code_opus_.bar, theme::bar_color_for_pct(opus), LV_PART_INDICATOR);
+
+  lv_label_set_text(plan_, pretty_plan_str(s.budgets.plan));
+
   char r[40];
-  snprintf(r, sizeof(r), "resets in %s", s.budgets.resets_in.c_str());
-  lv_label_set_text(resets_, r);
-
-  int worst = std::max(s.budgets.code_all, s.budgets.code_opus);
-  if (worst >= 85) {
-    char w[40];
-    snprintf(w, sizeof(w), "  %d%% used - slow down  ", worst);
-    lv_label_set_text(warn_, w);
-    lv_obj_clear_flag(warn_, LV_OBJ_FLAG_HIDDEN);
+  if (!s.budgets.resets_in.empty()) {
+    snprintf(r, sizeof(r), "resets in %s", s.budgets.resets_in.c_str());
+    lv_label_set_text(resets_, r);
   } else {
-    lv_obj_add_flag(warn_, LV_OBJ_FLAG_HIDDEN);
+    lv_label_set_text(resets_, "");
   }
 }
 
-} // namespace cyd
+}  // namespace cyd
 
 #endif  // UNIT_TEST

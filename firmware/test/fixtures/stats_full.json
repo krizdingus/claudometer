@@ -19,20 +19,14 @@
     ],
     "est_cost_usd": 7.41
   },
-  "sonnet": {
-    "weekly_pct": 58,
-    "used": 1160000,
-    "cap": 2000000,
-    "pace": "on_track"
-  },
   "chat": {
     "messages_today": 42,
     "daily_cap": 200,
     "resets_at": "00:00"
   },
   "routines": [
-    {"name": "babysit-prs", "status": "ok", "last_run": "12:00", "next_run": "17:00"},
-    {"name": "morning-digest", "status": "slow", "last_run": "09:01", "next_run": "—"}
+    {"name": "babysit-prs", "status": "ok", "last_run": "12:00", "next_run": "17:00", "next_run_in_minutes": 17},
+    {"name": "morning-digest", "status": "slow", "last_run": "09:01", "next_run": "—", "next_run_in_minutes": -1}
   ],
   "budgets": {
     "code_all": 71,

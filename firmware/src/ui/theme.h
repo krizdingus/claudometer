@@ -6,26 +6,45 @@
 
 namespace cyd::theme {
 
-constexpr uint32_t bg          = 0x0E0E10;
-constexpr uint32_t fg          = 0xEDEDED;
-constexpr uint32_t fg_muted    = 0x8A8A92;
-constexpr uint32_t accent      = 0xD97757;   // Claude orange
-constexpr uint32_t blue        = 0x6F9EFF;
-constexpr uint32_t red         = 0xE85C5C;
-constexpr uint32_t yellow      = 0xF5D24A;   // bezel chrome only
-constexpr uint32_t green       = 0x7BD389;
+enum class Mode { Dark, Light };
 
-inline lv_color_t c(uint32_t hex) { return lv_color_hex(hex); }
+struct Palette {
+  uint32_t bg;
+  uint32_t fg;
+  uint32_t fg_muted;
+  uint32_t accent;
+  uint32_t bar_bg;
+  uint32_t ok;
+  uint32_t warn;
+  uint32_t alert;
+};
 
-// Returns blue normally; red when pct >= 85.
+void set_mode(Mode m);
+Mode get_mode();
+const Palette& palette();
+
+lv_color_t bg();
+lv_color_t fg();
+lv_color_t fg_muted();
+lv_color_t accent();
+lv_color_t bar_bg();
+lv_color_t ok();
+lv_color_t warn();
+lv_color_t alert();
+
+// Returns accent normally; alert when pct >= 85.
 lv_color_t bar_color_for_pct(int pct);
 
-// Returns the appropriate pill background color for routine status.
+// Routine status pill color: ok/slow/fail/queued.
 lv_color_t status_pill_for(const char *status);
 
 // Common style applied to all tile screens (bg + padding).
 void apply_screen_styles(lv_obj_t *scr);
 
-} // namespace cyd::theme
+// Returns lv_color_t from a raw hex value. Kept for one-off colors that aren't
+// in the palette (e.g., subtle backgrounds drawn directly).
+inline lv_color_t hex(uint32_t v) { return lv_color_hex(v); }
+
+}  // namespace cyd::theme
 
 #endif  // UNIT_TEST

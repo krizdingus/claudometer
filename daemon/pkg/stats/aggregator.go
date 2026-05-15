@@ -46,14 +46,13 @@ func (a *Aggregator) Build(ctx context.Context) (Stats, error) {
 		LocalTime:   now.Local().Format("15:04"),
 		Session:     buildSession(active, caps, now),
 		ModelsToday: buildModelsToday(recs, now),
-		Sonnet:      buildSonnet(recs, caps, now),
 		Chat:        Chat{MessagesToday: 0, DailyCap: caps.DailyChatMessages, ResetsAt: "00:00"},
 		Budgets:     buildBudgets(recs, a.PlanInfo.Plan, caps, now),
 	}
 
 	rs, err := a.Routines.Get(ctx)
 	if err == nil {
-		out.Routines = convertRoutines(rs)
+		out.Routines = convertRoutines(rs, now)
 	}
 	return out, nil
 }
@@ -105,25 +104,6 @@ func buildModelsToday(recs []claudedata.Record, now time.Time) ModelsToday {
 	return ModelsToday{TotalTokens: claudedata.Total(totals), ByModel: rows, EstCostUSD: cost}
 }
 
-func buildSonnet(recs []claudedata.Record, caps claudedata.Caps, now time.Time) SonnetWeekly {
-	weekly := claudedata.WeeklyUsage(recs, now)
-	used := 0
-	for model, t := range weekly {
-		if model == "claude-sonnet-4-6" {
-			used += t
-		}
-	}
-	cap := caps.WeeklyAllModels // overall cap for Sonnet on Pro/Max
-	pct := 0
-	if cap > 0 {
-		pct = used * 100 / cap
-		if pct > 100 {
-			pct = 100
-		}
-	}
-	return SonnetWeekly{WeeklyPct: pct, Used: used, Cap: cap, Pace: "on_track"}
-}
-
 func buildBudgets(recs []claudedata.Record, plan claudedata.Plan, caps claudedata.Caps, now time.Time) Budgets {
 	weekly := claudedata.WeeklyUsage(recs, now)
 	allTotal := claudedata.Total(weekly)
@@ -153,7 +133,7 @@ func buildBudgets(recs []claudedata.Record, plan claudedata.Plan, caps claudedat
 	}
 }
 
-func convertRoutines(rs []routines.Routine) []Routine {
+func convertRoutines(rs []routines.Routine, now time.Time) []Routine {
 	out := []Routine{}
 	for _, r := range rs {
 		last := "—"
@@ -161,10 +141,23 @@ func convertRoutines(rs []routines.Routine) []Routine {
 			last = r.LastRun.Local().Format("15:04")
 		}
 		next := "—"
+		nextMins := -1
 		if r.NextRun != nil {
 			next = r.NextRun.Local().Format("15:04")
+			d := r.NextRun.Sub(now)
+			if d < 0 {
+				nextMins = 0
+			} else {
+				nextMins = int(d.Minutes())
+			}
 		}
-		out = append(out, Routine{Name: r.Name, Status: r.LastStatus, LastRun: last, NextRun: next})
+		out = append(out, Routine{
+			Name:             r.Name,
+			Status:           r.LastStatus,
+			LastRun:          last,
+			NextRun:          next,
+			NextRunInMinutes: nextMins,
+		})
 	}
 	return out
 }

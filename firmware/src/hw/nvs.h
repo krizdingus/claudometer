@@ -33,6 +33,11 @@ class Nvs {
   void load_touch_cal(uint16_t cal[8]) const;
   void save_touch_cal(const uint16_t cal[8]);
 
+  // Theme mode: 0 = dark (default), 1 = light.
+  bool has_theme() const;
+  int theme_mode() const;       // returns 0 if unset
+  void save_theme(int mode);
+
   // Wipe all keys, return to factory state.
   void factory_reset();
 };

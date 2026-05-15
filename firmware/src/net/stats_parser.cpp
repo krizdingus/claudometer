@@ -38,12 +38,6 @@ bool parse_stats(const char *data, size_t len, Stats &out) {
     out.models_today.by_model.push_back(read_row(row));
   }
 
-  JsonObjectConst sn = doc["sonnet"].as<JsonObjectConst>();
-  out.sonnet.weekly_pct = sn["weekly_pct"] | 0;
-  out.sonnet.used = sn["used"] | 0;
-  out.sonnet.cap = sn["cap"] | 0;
-  out.sonnet.pace = sn["pace"] | "";
-
   JsonObjectConst ch = doc["chat"].as<JsonObjectConst>();
   out.chat.messages_today = ch["messages_today"] | 0;
   out.chat.daily_cap = ch["daily_cap"] | 0;
@@ -55,6 +49,7 @@ bool parse_stats(const char *data, size_t len, Stats &out) {
     rs.status = r["status"] | "";
     rs.last_run = r["last_run"] | "";
     rs.next_run = r["next_run"] | "";
+    rs.next_run_in_minutes = r["next_run_in_minutes"].is<int>() ? r["next_run_in_minutes"].as<int>() : -1;
     out.routines.push_back(rs);
   }
 

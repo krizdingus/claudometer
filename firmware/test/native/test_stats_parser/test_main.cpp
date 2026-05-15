@@ -30,15 +30,14 @@ void test_parse_full_payload(void) {
   TEST_ASSERT_EQUAL_size_t(3, out.models_today.by_model.size());
   TEST_ASSERT_FLOAT_WITHIN(0.001, 7.41, out.models_today.est_cost_usd);
 
-  TEST_ASSERT_EQUAL_INT(58, out.sonnet.weekly_pct);
-  TEST_ASSERT_EQUAL_STRING("on_track", out.sonnet.pace.c_str());
-
   TEST_ASSERT_EQUAL_INT(42, out.chat.messages_today);
   TEST_ASSERT_EQUAL_INT(200, out.chat.daily_cap);
 
   TEST_ASSERT_EQUAL_size_t(2, out.routines.size());
   TEST_ASSERT_EQUAL_STRING("babysit-prs", out.routines[0].name.c_str());
   TEST_ASSERT_EQUAL_STRING("slow", out.routines[1].status.c_str());
+  TEST_ASSERT_EQUAL_INT(17, out.routines[0].next_run_in_minutes);
+  TEST_ASSERT_EQUAL_INT(-1, out.routines[1].next_run_in_minutes);
 
   TEST_ASSERT_EQUAL_INT(71, out.budgets.code_all);
   TEST_ASSERT_EQUAL_INT(89, out.budgets.code_opus);
@@ -58,7 +57,6 @@ void test_parse_handles_missing_optional_fields(void) {
   std::string body = R"({"schema":1,"generated_at":"2026-05-13T00:00:00Z",
     "session":{"pct_used":0,"minutes_remaining":0,"resets_at":"","models":[]},
     "models_today":{"total_tokens":0,"by_model":[],"est_cost_usd":0},
-    "sonnet":{"weekly_pct":0,"used":0,"cap":0,"pace":""},
     "chat":{"messages_today":0,"daily_cap":0,"resets_at":""},
     "routines":[],
     "budgets":{"code_all":0,"code_opus":0,"chat":0,"plan":"","resets_in":""}})";

@@ -17,9 +17,6 @@ class ScreenHome {
   void update(const Stats &s);
 
  private:
-  lv_obj_t *plan_pill_ = nullptr;
-  lv_obj_t *plan_pill_label_ = nullptr;
-
   lv_obj_t *session_pct_ = nullptr;
   lv_obj_t *session_bar_ = nullptr;
   lv_obj_t *session_meta_ = nullptr;
