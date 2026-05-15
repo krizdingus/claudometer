@@ -25,7 +25,6 @@
 #include "ui/screen_models.h"
 #include "ui/screen_routines.h"
 #include "ui/screen_session.h"
-#include "ui/screen_sonnet.h"
 #include "ui/theme.h"
 #include "ui/tileview.h"
 
@@ -41,7 +40,6 @@ Tileview *tileview_ = nullptr;
 ScreenHome *scr_home_ = nullptr;
 ScreenSession *scr_session_ = nullptr;
 ScreenModels *scr_models_ = nullptr;
-ScreenSonnet *scr_sonnet_ = nullptr;
 ScreenRoutines *scr_routines_ = nullptr;
 ScreenBudgets *scr_budgets_ = nullptr;
 ProvisionScreen *prov_ = nullptr;
@@ -98,7 +96,6 @@ void update_all_screens(const Stats &s) {
   if (scr_home_) scr_home_->update(s);
   if (scr_session_) scr_session_->update(s);
   if (scr_models_) scr_models_->update(s);
-  if (scr_sonnet_) scr_sonnet_->update(s);
   if (scr_routines_) scr_routines_->update(s);
   if (scr_budgets_) scr_budgets_->update(s);
   if (chrome_) {
@@ -245,13 +242,11 @@ void app_init() {
   scr_home_ = new ScreenHome();
   scr_session_ = new ScreenSession();
   scr_models_ = new ScreenModels();
-  scr_sonnet_ = new ScreenSonnet();
   scr_routines_ = new ScreenRoutines();
   scr_budgets_ = new ScreenBudgets();
   scr_home_->build(tileview_->tile(SCR_HOME));
   scr_session_->build(tileview_->tile(SCR_SESSION));
   scr_models_->build(tileview_->tile(SCR_MODELS));
-  scr_sonnet_->build(tileview_->tile(SCR_SONNET));
   scr_routines_->build(tileview_->tile(SCR_ROUTINES));
   scr_budgets_->build(tileview_->tile(SCR_BUDGETS));
 

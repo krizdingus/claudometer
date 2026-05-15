@@ -24,10 +24,10 @@ constexpr uint32_t kLongPressMs = 5000;
 enum Screen : uint8_t {
   SCR_HOME = 0,
   SCR_SESSION,
-  SCR_MODELS,
-  SCR_SONNET,
-  SCR_ROUTINES,
   SCR_BUDGETS,
+  SCR_MODELS,
+  SCR_ROUTINES,
+  SCR_SETTINGS,
   SCR_COUNT,
 };
 
