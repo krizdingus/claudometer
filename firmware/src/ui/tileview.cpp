@@ -10,7 +10,7 @@ void Tileview::attach(lv_obj_t *parent) {
   tv_ = lv_tileview_create(parent);
   lv_obj_set_size(tv_, 240, 320 - kStatusBarHeight - kFooterHeight);
   lv_obj_align(tv_, LV_ALIGN_TOP_MID, 0, kStatusBarHeight);
-  lv_obj_set_style_bg_color(tv_, theme::c(theme::bg), 0);
+  lv_obj_set_style_bg_color(tv_, theme::bg(), 0);
   lv_obj_set_style_border_width(tv_, 0, 0);
   lv_obj_set_scrollbar_mode(tv_, LV_SCROLLBAR_MODE_OFF);
 

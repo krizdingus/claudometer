@@ -26,7 +26,7 @@ const char *pretty_plan(const std::string &raw) {
 lv_obj_t *section_header(lv_obj_t *parent, const char *text, int y) {
   auto *lbl = lv_label_create(parent);
   lv_label_set_text(lbl, text);
-  lv_obj_set_style_text_color(lbl, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_color(lbl, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(lbl, &lv_font_montserrat_12, 0);
   lv_obj_align(lbl, LV_ALIGN_TOP_LEFT, 4, y);
   return lbl;
@@ -37,8 +37,8 @@ lv_obj_t *make_bar(lv_obj_t *parent, int y) {
   lv_obj_set_size(b, 224, kBarHeight);
   lv_obj_align(b, LV_ALIGN_TOP_LEFT, 4, y);
   lv_bar_set_range(b, 0, 100);
-  lv_obj_set_style_bg_color(b, theme::c(0x1F1F22), LV_PART_MAIN);
-  lv_obj_set_style_bg_color(b, theme::c(theme::blue), LV_PART_INDICATOR);
+  lv_obj_set_style_bg_color(b, theme::bar_bg(), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(b, theme::accent(), LV_PART_INDICATOR);
   lv_obj_set_style_radius(b, kBarRadius, LV_PART_MAIN);
   lv_obj_set_style_radius(b, kBarRadius, LV_PART_INDICATOR);
   return b;
@@ -51,7 +51,7 @@ void ScreenHome::build(lv_obj_t *parent) {
   plan_pill_ = lv_obj_create(parent);
   lv_obj_set_size(plan_pill_, 78, 22);
   lv_obj_align(plan_pill_, LV_ALIGN_TOP_RIGHT, -4, 0);
-  lv_obj_set_style_bg_color(plan_pill_, theme::c(theme::accent), 0);
+  lv_obj_set_style_bg_color(plan_pill_, theme::accent(), 0);
   lv_obj_set_style_bg_opa(plan_pill_, LV_OPA_COVER, 0);
   lv_obj_set_style_border_width(plan_pill_, 0, 0);
   lv_obj_set_style_radius(plan_pill_, 11, 0);
@@ -59,21 +59,21 @@ void ScreenHome::build(lv_obj_t *parent) {
   lv_obj_clear_flag(plan_pill_, LV_OBJ_FLAG_SCROLLABLE);
 
   plan_pill_label_ = lv_label_create(plan_pill_);
-  lv_obj_set_style_text_color(plan_pill_label_, theme::c(theme::bg), 0);
+  lv_obj_set_style_text_color(plan_pill_label_, theme::bg(), 0);
   lv_obj_set_style_text_font(plan_pill_label_, &lv_font_montserrat_14, 0);
   lv_label_set_text(plan_pill_label_, "—");
   lv_obj_center(plan_pill_label_);
 
   auto *title = lv_label_create(parent);
   lv_label_set_text(title, "Usage");
-  lv_obj_set_style_text_color(title, theme::c(theme::fg), 0);
+  lv_obj_set_style_text_color(title, theme::fg(), 0);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_16, 0);
   lv_obj_align(title, LV_ALIGN_TOP_LEFT, 4, 2);
 
   // SESSION block
   section_header(parent, "SESSION", 36);
   session_pct_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(session_pct_, theme::c(theme::fg), 0);
+  lv_obj_set_style_text_color(session_pct_, theme::fg(), 0);
   lv_obj_set_style_text_font(session_pct_, &lv_font_montserrat_32, 0);
   lv_obj_align(session_pct_, LV_ALIGN_TOP_RIGHT, -4, 28);
   lv_label_set_text(session_pct_, "--%");
@@ -81,7 +81,7 @@ void ScreenHome::build(lv_obj_t *parent) {
   session_bar_ = make_bar(parent, 72);
 
   session_meta_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(session_meta_, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_color(session_meta_, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(session_meta_, &lv_font_montserrat_12, 0);
   lv_obj_align(session_meta_, LV_ALIGN_TOP_LEFT, 4, 90);
   lv_label_set_text(session_meta_, "no active session");
@@ -89,7 +89,7 @@ void ScreenHome::build(lv_obj_t *parent) {
   // WEEK block
   section_header(parent, "WEEK", 122);
   week_pct_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(week_pct_, theme::c(theme::fg), 0);
+  lv_obj_set_style_text_color(week_pct_, theme::fg(), 0);
   lv_obj_set_style_text_font(week_pct_, &lv_font_montserrat_32, 0);
   lv_obj_align(week_pct_, LV_ALIGN_TOP_RIGHT, -4, 114);
   lv_label_set_text(week_pct_, "--%");
@@ -97,7 +97,7 @@ void ScreenHome::build(lv_obj_t *parent) {
   week_bar_ = make_bar(parent, 158);
 
   week_meta_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(week_meta_, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_color(week_meta_, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(week_meta_, &lv_font_montserrat_12, 0);
   lv_obj_align(week_meta_, LV_ALIGN_TOP_LEFT, 4, 176);
   lv_label_set_text(week_meta_, "—");
@@ -105,12 +105,12 @@ void ScreenHome::build(lv_obj_t *parent) {
   // TODAY summary line
   auto *today_label = lv_label_create(parent);
   lv_label_set_text(today_label, "TODAY");
-  lv_obj_set_style_text_color(today_label, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_color(today_label, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(today_label, &lv_font_montserrat_12, 0);
   lv_obj_align(today_label, LV_ALIGN_TOP_LEFT, 4, 208);
 
   today_line_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(today_line_, theme::c(theme::fg), 0);
+  lv_obj_set_style_text_color(today_line_, theme::fg(), 0);
   lv_obj_set_style_text_font(today_line_, &lv_font_montserrat_16, 0);
   lv_obj_align(today_line_, LV_ALIGN_TOP_LEFT, 4, 226);
   lv_label_set_text(today_line_, "0k tokens");

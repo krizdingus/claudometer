@@ -207,7 +207,7 @@ void app_init() {
   }
 
   root_ = lv_screen_active();
-  lv_obj_set_style_bg_color(root_, theme::c(theme::bg), 0);
+  lv_obj_set_style_bg_color(root_, theme::bg(), 0);
 
   chrome_ = new Chrome();
   chrome_->attach(root_);
@@ -215,7 +215,7 @@ void app_init() {
   pre_pairing_layer_ = lv_obj_create(root_);
   lv_obj_set_size(pre_pairing_layer_, 240, 320 - kStatusBarHeight - kFooterHeight);
   lv_obj_align(pre_pairing_layer_, LV_ALIGN_TOP_MID, 0, kStatusBarHeight);
-  lv_obj_set_style_bg_color(pre_pairing_layer_, theme::c(theme::bg), 0);
+  lv_obj_set_style_bg_color(pre_pairing_layer_, theme::bg(), 0);
   lv_obj_set_style_border_width(pre_pairing_layer_, 0, 0);
   lv_obj_set_style_radius(pre_pairing_layer_, 0, 0);
   lv_obj_set_style_pad_all(pre_pairing_layer_, 0, 0);
@@ -229,7 +229,7 @@ void app_init() {
   main_layer_ = lv_obj_create(root_);
   lv_obj_set_size(main_layer_, 240, 320 - kStatusBarHeight - kFooterHeight);
   lv_obj_align(main_layer_, LV_ALIGN_TOP_MID, 0, kStatusBarHeight);
-  lv_obj_set_style_bg_color(main_layer_, theme::c(theme::bg), 0);
+  lv_obj_set_style_bg_color(main_layer_, theme::bg(), 0);
   lv_obj_set_style_border_width(main_layer_, 0, 0);
   lv_obj_set_style_radius(main_layer_, 0, 0);
   lv_obj_set_style_pad_all(main_layer_, 0, 0);

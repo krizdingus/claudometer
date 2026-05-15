@@ -13,7 +13,7 @@ static void build_row(lv_obj_t *parent, int y, const char *name,
                       ScreenBudgets::Row &r) {
   r.label = lv_label_create(parent);
   lv_label_set_text(r.label, name);
-  lv_obj_set_style_text_color(r.label, theme::c(theme::fg), 0);
+  lv_obj_set_style_text_color(r.label, theme::fg(), 0);
   lv_obj_set_style_text_font(r.label, &lv_font_montserrat_14, 0);
   lv_obj_align(r.label, LV_ALIGN_TOP_LEFT, 4, y);
 
@@ -21,13 +21,13 @@ static void build_row(lv_obj_t *parent, int y, const char *name,
   lv_obj_set_size(r.bar, 150, 14);
   lv_obj_align(r.bar, LV_ALIGN_TOP_LEFT, 60, y + 2);
   lv_bar_set_range(r.bar, 0, 100);
-  lv_obj_set_style_bg_color(r.bar, theme::c(0x222226), LV_PART_MAIN);
-  lv_obj_set_style_bg_color(r.bar, theme::c(theme::blue), LV_PART_INDICATOR);
+  lv_obj_set_style_bg_color(r.bar, theme::bar_bg(), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(r.bar, theme::accent(), LV_PART_INDICATOR);
   lv_obj_set_style_radius(r.bar, 6, LV_PART_MAIN);
   lv_obj_set_style_radius(r.bar, 6, LV_PART_INDICATOR);
 
   r.pct = lv_label_create(parent);
-  lv_obj_set_style_text_color(r.pct, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_color(r.pct, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(r.pct, &lv_font_montserrat_12, 0);
   lv_obj_align(r.pct, LV_ALIGN_TOP_RIGHT, -4, y + 2);
 }
@@ -35,7 +35,7 @@ static void build_row(lv_obj_t *parent, int y, const char *name,
 void ScreenBudgets::build(lv_obj_t *parent) {
   auto *title = lv_label_create(parent);
   lv_label_set_text(title, "Budgets - This Week");
-  lv_obj_set_style_text_color(title, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_color(title, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_12, 0);
   lv_obj_align(title, LV_ALIGN_TOP_LEFT, 4, 0);
 
@@ -43,19 +43,19 @@ void ScreenBudgets::build(lv_obj_t *parent) {
   build_row(parent, 60, "Opus",  code_opus_);
 
   plan_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(plan_, theme::c(theme::accent), 0);
+  lv_obj_set_style_text_color(plan_, theme::accent(), 0);
   lv_obj_set_style_text_font(plan_, &lv_font_montserrat_16, 0);
   lv_obj_align(plan_, LV_ALIGN_TOP_LEFT, 4, 120);
 
   resets_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(resets_, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_color(resets_, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(resets_, &lv_font_montserrat_14, 0);
   lv_obj_align(resets_, LV_ALIGN_TOP_LEFT, 4, 148);
 
   warn_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(warn_, theme::c(theme::bg), 0);
+  lv_obj_set_style_text_color(warn_, theme::bg(), 0);
   lv_obj_set_style_text_font(warn_, &lv_font_montserrat_12, 0);
-  lv_obj_set_style_bg_color(warn_, theme::c(theme::red), 0);
+  lv_obj_set_style_bg_color(warn_, theme::alert(), 0);
   lv_obj_set_style_bg_opa(warn_, LV_OPA_COVER, 0);
   lv_obj_set_style_pad_all(warn_, 4, 0);
   lv_obj_set_style_radius(warn_, 6, 0);

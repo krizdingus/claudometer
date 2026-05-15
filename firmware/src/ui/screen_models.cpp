@@ -13,7 +13,7 @@ static void build_row(lv_obj_t *parent, int y_offset, const char *name,
                       ScreenModels::Row &r) {
   r.label = lv_label_create(parent);
   lv_label_set_text(r.label, name);
-  lv_obj_set_style_text_color(r.label, theme::c(theme::fg), 0);
+  lv_obj_set_style_text_color(r.label, theme::fg(), 0);
   lv_obj_set_style_text_font(r.label, &lv_font_montserrat_14, 0);
   lv_obj_align(r.label, LV_ALIGN_TOP_LEFT, 4, y_offset);
 
@@ -21,13 +21,13 @@ static void build_row(lv_obj_t *parent, int y_offset, const char *name,
   lv_obj_set_size(r.bar, 160, 14);
   lv_obj_align(r.bar, LV_ALIGN_TOP_LEFT, 60, y_offset + 2);
   lv_bar_set_range(r.bar, 0, 1000000);
-  lv_obj_set_style_bg_color(r.bar, theme::c(0x222226), LV_PART_MAIN);
-  lv_obj_set_style_bg_color(r.bar, theme::c(theme::blue), LV_PART_INDICATOR);
+  lv_obj_set_style_bg_color(r.bar, theme::bar_bg(), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(r.bar, theme::accent(), LV_PART_INDICATOR);
   lv_obj_set_style_radius(r.bar, 6, LV_PART_MAIN);
   lv_obj_set_style_radius(r.bar, 6, LV_PART_INDICATOR);
 
   r.tokens = lv_label_create(parent);
-  lv_obj_set_style_text_color(r.tokens, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_color(r.tokens, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(r.tokens, &lv_font_montserrat_12, 0);
   lv_obj_align(r.tokens, LV_ALIGN_TOP_LEFT, 60, y_offset + 20);
 }
@@ -35,7 +35,7 @@ static void build_row(lv_obj_t *parent, int y_offset, const char *name,
 void ScreenModels::build(lv_obj_t *parent) {
   auto *title = lv_label_create(parent);
   lv_label_set_text(title, "All Models - Today");
-  lv_obj_set_style_text_color(title, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_color(title, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_12, 0);
   lv_obj_align(title, LV_ALIGN_TOP_LEFT, 4, 0);
 
@@ -44,12 +44,12 @@ void ScreenModels::build(lv_obj_t *parent) {
   build_row(parent, 130, "Haiku", haiku_);
 
   total_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(total_, theme::c(theme::fg), 0);
+  lv_obj_set_style_text_color(total_, theme::fg(), 0);
   lv_obj_set_style_text_font(total_, &lv_font_montserrat_16, 0);
   lv_obj_align(total_, LV_ALIGN_TOP_LEFT, 4, 200);
 
   cost_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(cost_, theme::c(theme::accent), 0);
+  lv_obj_set_style_text_color(cost_, theme::accent(), 0);
   lv_obj_set_style_text_font(cost_, &lv_font_montserrat_24, 0);
   lv_obj_align(cost_, LV_ALIGN_TOP_LEFT, 4, 222);
 }

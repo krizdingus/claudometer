@@ -11,14 +11,14 @@ namespace cyd {
 void ScreenRoutines::build(lv_obj_t *parent) {
   auto *title = lv_label_create(parent);
   lv_label_set_text(title, "Routines");
-  lv_obj_set_style_text_color(title, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_color(title, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(title, &lv_font_montserrat_12, 0);
   lv_obj_align(title, LV_ALIGN_TOP_LEFT, 4, 0);
 
   for (int i = 0; i < kMaxRows; ++i) {
     int y = 22 + i * 38;
     rows_[i].name = lv_label_create(parent);
-    lv_obj_set_style_text_color(rows_[i].name, theme::c(theme::fg), 0);
+    lv_obj_set_style_text_color(rows_[i].name, theme::fg(), 0);
     lv_obj_set_style_text_font(rows_[i].name, &lv_font_montserrat_14, 0);
     lv_obj_align(rows_[i].name, LV_ALIGN_TOP_LEFT, 4, y);
     lv_obj_add_flag(rows_[i].name, LV_OBJ_FLAG_HIDDEN);
@@ -32,20 +32,20 @@ void ScreenRoutines::build(lv_obj_t *parent) {
     lv_obj_add_flag(rows_[i].pill, LV_OBJ_FLAG_HIDDEN);
 
     auto *pill_label = lv_label_create(rows_[i].pill);
-    lv_obj_set_style_text_color(pill_label, theme::c(theme::bg), 0);
+    lv_obj_set_style_text_color(pill_label, theme::bg(), 0);
     lv_obj_set_style_text_font(pill_label, &lv_font_montserrat_12, 0);
     lv_obj_center(pill_label);
     lv_obj_set_user_data(rows_[i].pill, pill_label);
 
     rows_[i].when = lv_label_create(parent);
-    lv_obj_set_style_text_color(rows_[i].when, theme::c(theme::fg_muted), 0);
+    lv_obj_set_style_text_color(rows_[i].when, theme::fg_muted(), 0);
     lv_obj_set_style_text_font(rows_[i].when, &lv_font_montserrat_12, 0);
     lv_obj_align(rows_[i].when, LV_ALIGN_TOP_LEFT, 4, y + 18);
     lv_obj_add_flag(rows_[i].when, LV_OBJ_FLAG_HIDDEN);
   }
 
   empty_ = lv_label_create(parent);
-  lv_obj_set_style_text_color(empty_, theme::c(theme::fg_muted), 0);
+  lv_obj_set_style_text_color(empty_, theme::fg_muted(), 0);
   lv_obj_set_style_text_font(empty_, &lv_font_montserrat_14, 0);
   lv_label_set_long_mode(empty_, LV_LABEL_LONG_WRAP);
   lv_obj_set_width(empty_, 220);
