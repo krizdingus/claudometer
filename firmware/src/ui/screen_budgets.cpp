@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 
+#include "app/plan_names.h"
 #include "ui/theme.h"
 
 namespace cyd {
@@ -93,14 +94,6 @@ void ScreenBudgets::build(lv_obj_t *parent) {
   code_all_.pct = nullptr;
 }
 
-static const char *pretty_plan(const std::string &raw) {
-  if (raw == "max-20x") return "MAX 20x";
-  if (raw == "max-5x")  return "MAX 5x";
-  if (raw == "pro")     return "PRO";
-  if (raw == "free")    return "FREE";
-  return raw.c_str();
-}
-
 void ScreenBudgets::update(const Stats &s) {
   int all = s.budgets.code_all;
   char buf[16];
@@ -115,7 +108,7 @@ void ScreenBudgets::update(const Stats &s) {
   lv_bar_set_value(code_opus_.bar, opus, LV_ANIM_OFF);
   lv_obj_set_style_bg_color(code_opus_.bar, theme::bar_color_for_pct(opus), LV_PART_INDICATOR);
 
-  lv_label_set_text(plan_, pretty_plan(s.budgets.plan));
+  lv_label_set_text(plan_, pretty_plan_str(s.budgets.plan));
 
   char r[40];
   if (!s.budgets.resets_in.empty()) {

@@ -9,6 +9,7 @@
 
 #include "app/app_config.h"
 #include "app/long_press.h"
+#include "app/plan_names.h"
 #include "app/state_machine.h"
 #include "hw/display.h"
 #include "hw/nvs.h"
@@ -58,14 +59,6 @@ lv_obj_t *root_ = nullptr;
 lv_obj_t *pre_pairing_layer_ = nullptr;   // hosts prov + disc
 lv_obj_t *main_layer_ = nullptr;          // hosts tileview + chrome
 
-static const char *pretty_plan_str(const std::string &raw) {
-  if (raw == "max-20x") return "MAX 20x";
-  if (raw == "max-5x")  return "MAX 5x";
-  if (raw == "pro")     return "PRO";
-  if (raw == "free")    return "FREE";
-  return raw.c_str();
-}
-
 void show_layer(lv_obj_t *layer) {
   lv_obj_add_flag(pre_pairing_layer_, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(main_layer_, LV_OBJ_FLAG_HIDDEN);
@@ -108,7 +101,18 @@ void update_all_screens(const Stats &s) {
   if (scr_models_) scr_models_->update(s);
   if (scr_routines_) scr_routines_->update(s);
   if (scr_budgets_) scr_budgets_->update(s);
-  if (scr_settings_) scr_settings_->update(s);
+  if (scr_settings_) {
+    scr_settings_->update(s);
+    // Refresh device info from current WiFi state — at boot the IP is
+    // 0.0.0.0 since WiFi hasn't associated yet.
+    String ip_str = WiFi.localIP().toString();
+    String host_str = WiFi.getHostname();
+#ifdef FIRMWARE_VERSION
+    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), FIRMWARE_VERSION);
+#else
+    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), "?");
+#endif
+  }
   if (chrome_) {
     chrome_->set_health(s.stale ? 1 : 0);
     if (!s.local_time.empty()) chrome_->set_clock(s.local_time.c_str());
@@ -293,7 +297,7 @@ void app_init() {
 #endif
   }
 
-  lv_obj_add_event_cb(lv_scr_act(), on_screen_click, LV_EVENT_RELEASED, nullptr);
+  lv_obj_add_event_cb(root_, on_screen_click, LV_EVENT_RELEASED, nullptr);
 
   mdns_ = new MdnsDiscover();
   stats_client_ = new StatsClient();
