@@ -25,6 +25,7 @@
 #include "ui/screen_models.h"
 #include "ui/screen_routines.h"
 #include "ui/screen_session.h"
+#include "ui/screen_settings.h"
 #include "ui/theme.h"
 #include "ui/tileview.h"
 
@@ -42,6 +43,7 @@ ScreenSession *scr_session_ = nullptr;
 ScreenModels *scr_models_ = nullptr;
 ScreenRoutines *scr_routines_ = nullptr;
 ScreenBudgets *scr_budgets_ = nullptr;
+ScreenSettings *scr_settings_ = nullptr;
 ProvisionScreen *prov_ = nullptr;
 DiscoverScreen *disc_ = nullptr;
 MdnsDiscover *mdns_ = nullptr;
@@ -106,6 +108,7 @@ void update_all_screens(const Stats &s) {
   if (scr_models_) scr_models_->update(s);
   if (scr_routines_) scr_routines_->update(s);
   if (scr_budgets_) scr_budgets_->update(s);
+  if (scr_settings_) scr_settings_->update(s);
   if (chrome_) {
     chrome_->set_health(s.stale ? 1 : 0);
     if (!s.local_time.empty()) chrome_->set_clock(s.local_time.c_str());
@@ -258,6 +261,17 @@ void app_init() {
   scr_models_->build(tileview_->tile(SCR_MODELS));
   scr_routines_->build(tileview_->tile(SCR_ROUTINES));
   scr_budgets_->build(tileview_->tile(SCR_BUDGETS));
+  scr_settings_ = new ScreenSettings();
+  scr_settings_->build(tileview_->tile(SCR_SETTINGS), nvs_);
+  {
+    String ip_str = WiFi.localIP().toString();
+    String host_str = WiFi.getHostname();
+#ifdef FIRMWARE_VERSION
+    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), FIRMWARE_VERSION);
+#else
+    scr_settings_->set_device_info(host_str.c_str(), ip_str.c_str(), "?");
+#endif
+  }
 
   mdns_ = new MdnsDiscover();
   stats_client_ = new StatsClient();
