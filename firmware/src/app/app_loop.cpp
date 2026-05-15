@@ -206,6 +206,10 @@ void app_init() {
     daemon_display_ = hp;
   }
 
+  // Apply stored theme before building UI
+  int theme_mode = nvs_->has_theme() ? nvs_->theme_mode() : 0;
+  theme::set_mode(theme_mode == 1 ? theme::Mode::Light : theme::Mode::Dark);
+
   root_ = lv_screen_active();
   lv_obj_set_style_bg_color(root_, theme::bg(), 0);
 
