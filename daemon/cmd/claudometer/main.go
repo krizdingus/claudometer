@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	version    = "0.1.2"
+	version    = "0.2.0"
 	listenAddr = "0.0.0.0:7842"
 	statusURL  = "http://127.0.0.1:7842"
 )
