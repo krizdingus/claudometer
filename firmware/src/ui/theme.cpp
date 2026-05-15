@@ -69,7 +69,7 @@ void apply_screen_styles(lv_obj_t *scr) {
   lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
   lv_obj_set_style_border_width(scr, 0, 0);
   lv_obj_set_style_radius(scr, 0, 0);
-  lv_obj_set_style_pad_all(scr, 8, 0);
+  lv_obj_set_style_pad_all(scr, 4, 0);
   lv_obj_set_style_text_color(scr, fg(), 0);
   lv_obj_set_style_text_font(scr, &lv_font_montserrat_14, 0);
   lv_obj_clear_flag(scr, LV_OBJ_FLAG_SCROLLABLE);

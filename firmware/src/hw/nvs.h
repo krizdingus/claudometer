@@ -38,6 +38,11 @@ class Nvs {
   int theme_mode() const;       // returns 0 if unset
   void save_theme(int mode);
 
+  // Brightness duty (0-255). Default = kBrightnessDefault when unset.
+  bool has_brightness() const;
+  uint8_t brightness() const;
+  void save_brightness(uint8_t duty);
+
   // Wipe all keys, return to factory state.
   void factory_reset();
 };

@@ -34,4 +34,11 @@ enum Screen : uint8_t {
 constexpr int kStatusBarHeight = 18;
 constexpr int kFooterHeight    = 18;
 
+// Brightness presets — Low/Med/High/Max (manual levels in Settings).
+constexpr uint8_t kBrightnessLow  = 64;   // ~25%
+constexpr uint8_t kBrightnessMed  = 128;  // ~50%
+constexpr uint8_t kBrightnessHigh = 200;  // ~78% — matches pre-feature default
+constexpr uint8_t kBrightnessMax  = 255;  // 100%
+constexpr uint8_t kBrightnessDefault = kBrightnessHigh;
+
 } // namespace cyd

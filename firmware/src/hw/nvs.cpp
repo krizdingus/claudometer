@@ -4,6 +4,8 @@
 
 #include <Preferences.h>
 
+#include "app/app_config.h"
+
 namespace cyd {
 
 namespace {
@@ -49,6 +51,10 @@ void Nvs::save_touch_cal(const uint16_t cal[8]) {
 bool Nvs::has_theme() const { return prefs.isKey("theme"); }
 int Nvs::theme_mode() const { return prefs.getInt("theme", 0); }
 void Nvs::save_theme(int mode) { prefs.putInt("theme", mode); }
+
+bool Nvs::has_brightness() const { return prefs.isKey("brightness"); }
+uint8_t Nvs::brightness() const { return (uint8_t)prefs.getUChar("brightness", kBrightnessDefault); }
+void Nvs::save_brightness(uint8_t duty) { prefs.putUChar("brightness", duty); }
 
 void Nvs::factory_reset() {
   prefs.clear();
